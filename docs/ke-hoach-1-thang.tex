@@ -1,0 +1,222 @@
+% !TEX program = xelatex
+% Overleaf: Menu > Compiler = XeLaTeX (file cũng chạy được với pdfLaTeX).
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T5]{fontenc}
+  \usepackage{tgtermes}
+  \usepackage{tgheros}
+  \usepackage[scale=0.9]{tgcursor}
+\else
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+  \setsansfont{texgyreheros}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+  \setmonofont{texgyrecursor}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic,Scale=MatchLowercase]
+\fi
+\usepackage{xcolor}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\setlist{itemsep=2pt,topsep=3pt}
+\emergencystretch=3em
+\sloppy
+\titleformat{\section}{\large\bfseries\sffamily}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\sffamily}{\thesubsection.}{0.6em}{}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small Trustworthy AI --- Capstone}
+\fancyhead[R]{\small Prompt-Injection Red-Team \& Layered Defense}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\definecolor{done}{RGB}{46,125,50}
+\definecolor{todo}{RGB}{90,90,90}
+\definecolor{warn}{RGB}{191,87,0}
+\newcommand{\ok}{\textcolor{done}{\textbf{Xong}}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{Kế hoạch triển khai 2 tuần}\\[2pt]
+\large Prompt-Injection Red-Team \& Layered Defense for an LLM Agent}
+\author{Nhóm: Minh, Thành, Ngọc, Hương, Nam}
+\date{Cập nhật: 02/10/2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\section{Hiện trạng}
+Kế hoạch gốc 10 tuần được nén thành \textbf{2 tuần} (05/10--17/10/2026): \textbf{giữa kỳ 10/10, nộp cuối 17/10}. Lịch rất chặt nên phạm vi được ưu tiên lại (mục~\ref{sec:plan}). Hai bước đầu đã hoàn thành:
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}clYr@{}}
+\toprule
+\# & Bước & Bằng chứng & Trạng thái\\
+\midrule
+1 & Khảo sát tài liệu, threat model, thiết kế phương pháp & Báo cáo tiến độ (Claude Doc) & \ok\\
+2 & Bộ prompt tấn công (train/hold-out) & \code{attack\_prompts/} (72 prompt, Hương) & \ok\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Giả định cần xác nhận:} (i) ``2 bước đầu'' là hai dòng trên; (ii) mốc giữa kỳ 10/10 và nộp cuối 17/10 như nhóm đã xác nhận; (iii) thư mục \code{ai\_agent\_proposal/} hiện chưa có file đề xuất nào của Thành/Ngọc/Nam, nên phần agent dưới đây dùng lựa chọn đã thống nhất trong cuộc trao đổi (mục~\ref{sec:agent}).
+
+\section{Đánh giá bộ prompt tấn công}
+\subsection{Thống kê (đã kiểm tra trên bản mới nhất của repo)}
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & Train & Hold-out\\
+\midrule
+Số prompt & 48 & 24\\
+Số loại tấn công (cân bằng) & 6 $\times$ 8 & 6 $\times$ 4\\
+Số kỹ thuật khác nhau & 48 & 24\\
+Độ dài trung bình / tối đa (ký tự) & 1\,407 / 9\,848 & 983 / 6\,105\\
+Mục tiêu rò rỉ (system prompt / canary) & 47 & 19\\
+Mục tiêu phá vỡ tính toàn vẹn (đổi nội dung tóm tắt\dots) & 1 & 5\\
+\bottomrule
+\end{tabular}
+\end{center}
+Loại tấn công: direct injection, indirect injection, jailbreak roleplay, code-switching, obfuscation, many-shot. Không có ID trùng, không có cặp trùng/gần trùng giữa train và hold-out (độ tương đồng $\le 0{,}6$).
+
+\subsection{Điểm mạnh}
+\begin{itemize}
+  \item \textbf{Hold-out tách theo kỹ thuật, không chỉ theo prompt}: 24/24 kỹ thuật hold-out không xuất hiện ở train (ví dụ \code{boundary\_forgery}, \code{zero\_width\_instruction}, ngôn ngữ ja/ko/zh/ru). Đây chính là kiểm định tổng quát hoá mà đề tài cần.
+  \item \textbf{Có ground truth tự động}: mục tiêu gắn với giá trị \code{SECRET\_CANARY} hoặc câu tóm tắt sai xác định, nên có thể tính ASR bằng so khớp chuỗi mà không phụ thuộc LLM-as-judge.
+  \item Độ phủ tốt: nhiều ngôn ngữ, mã hoá (Base64, ROT13, hex, unicode escape, zero-width), many-shot dạng hội thoại/JSON/bảng.
+\end{itemize}
+
+\subsection{Vấn đề và cách vá}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}cYYl@{}}
+\toprule
+\# & Vấn đề & Hậu quả & Ưu tiên\\
+\midrule
+1 & \textbf{Không có tập benign} & Không đo được tỉ lệ từ chối oan và utility drop (hai metric đã cam kết); defense chặn mọi thứ vẫn đạt ASR=0. & \textcolor{warn}{Cao}\\
+2 & Mỗi kỹ thuật chỉ có 1 prompt; hold-out chỉ 4 prompt/loại & 1 prompt = 25\% ASR của loại đó; khoảng tin cậy rất rộng. & \textcolor{warn}{Cao}\\
+3 & Tài liệu không tin cậy trộn trong tin nhắn người dùng (không có trường riêng) & Lớp 3 (spotlighting/instruction hierarchy) và lớp 4 cần biết đâu là phần untrusted; harness phải tự tách chuỗi, dễ sai. & \textcolor{warn}{Cao}\\
+4 & Gần như chỉ có mục tiêu \emph{rò rỉ} (47/48 train); chỉ 1 mục tiêu toàn vẹn ở train nhưng 5 ở hold-out & Khoảng cách train$\to$hold-out bị lẫn giữa ``kỹ thuật mới'' và ``mục tiêu mới''. Chưa có tấn công gọi tool, trong khi đề tài là \emph{agent}. & Trung bình\\
+5 & Prompt mã hoá (Base64/ROT13/hex) phụ thuộc khả năng giải mã của model nhỏ & ASR thấp có thể do model không giải mã được chứ không do defense. & Trung bình\\
+6 & Thiếu trường \code{success\_check}, \code{channel} trong schema & Mỗi người chấm một kiểu, không tái lập được. & Trung bình\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Việc vá cụ thể (giao Hương, 05--07/10)}
+\begin{enumerate}
+  \item \textbf{Tập benign $\ge 50$ prompt}: tác vụ tóm tắt/hỏi đáp bình thường + \emph{hard negatives} (câu hợp lệ chứa từ ``bỏ qua'', ``system prompt'', Base64, tiếng nước ngoài).
+  \item \textbf{Schema v2}: thêm \code{user\_task}, \code{untrusted\_document} (tách kênh), \code{success\_check} (chuỗi canary phải xuất hiện, hoặc regex), \code{goal\_type} $\in$ \{leak, integrity, tool\_action\}.
+  \item \textbf{Nếu còn thời gian} (ưu tiên thấp): thêm $\approx 6$ prompt kiểu tool-action (ví dụ ép gọi công cụ gửi dữ liệu ra ngoài, trên tool giả lập) và $\approx 12$ prompt \textbf{paraphrase của kỹ thuật train} thành tập \code{test\_indist} để tách hai nguồn gây suy giảm: kỹ thuật mới \emph{vs.} mục tiêu mới.
+  \item Với mã hoá: bổ sung kiểm tra ``model giải mã được không'' (đưa chuỗi mã hoá vô hại, hỏi nội dung) để chuẩn hoá ASR.
+\end{enumerate}
+
+\section{Agent và model đã chọn}\label{sec:agent}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}lYYY@{}}
+\toprule
+Vai trò & Model & Cách chạy & Ghi chú\\
+\midrule
+Chính & Qwen3-8B (Apache 2.0) & Local, Ollama: \code{ollama pull qwen3:8b} & Có tool-use; tắt chế độ thinking khi đo để nhanh và ổn định.\\
+Chéo model & GLM (Z.AI) & OpenRouter, endpoint free xoay vòng & Alignment khác Qwen $\Rightarrow$ kiểm tra defense có chuyển được sang model khác.\\
+Tuỳ chọn & DeepSeek-R1-Distill-7B & Local, \code{ollama pull deepseek-r1:7b} & Quan sát injection lộ trong chuỗi suy luận.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Agent giả lập}: nhận \code{user\_task} $\to$ ``retrieve'' \code{untrusted\_document} $\to$ model sinh câu trả lời / gọi tool giả lập. System prompt chứa \code{SECRET\_CANARY} sinh ngẫu nhiên mỗi lần chạy.
+
+\textbf{Giới hạn ngân sách (ước lượng, cần đo thực tế ngay 05--06/10):} 72 prompt $\times$ 3 lần lấy mẫu $\times$ 5 cấu hình (baseline, +L1, +L2, +L3, +L4) $\approx$ 1\,080 lượt sinh/model. Free tier OpenRouter chỉ 50 yêu cầu/ngày (nạp 10\$ thì 1\,000/ngày) $\Rightarrow$ model chéo chỉ chạy \textbf{tập hold-out, 1 lần lấy mẫu} ($\approx$ 120 yêu cầu; nạp 10\$ để chạy xong trong một ngày); model chính chạy đầy đủ trên máy local.
+
+\section{Kế hoạch 2 tuần}\label{sec:plan}
+\begin{center}
+\begin{tikzpicture}[x=0.7cm,y=0.62cm,font=\footnotesize]
+  \foreach \w/\l in {0/Tuần 1,1/Tuần 2}{
+    \node[anchor=south] at (\w*7.2+3.6,0.3) {\l};
+    \draw[gray!40] (\w*7.2,0.2) -- (\w*7.2,-6.7);
+  }
+  \draw[gray!40] (14.4,0.2) -- (14.4,-6.7);
+  \def\lab#1#2{\node[anchor=east,text width=4.6cm,align=right] at (-0.15,#1) {#2};}
+  \lab{-0.5}{Bước 1--2: tài liệu, bộ prompt}
+  \lab{-1.6}{Agent, harness, vá prompt, baseline}
+  \lab{-2.7}{Lớp 1--3: lọc, phân loại, tách đặc quyền}
+  \lab{-3.8}{Lớp 4: Dual-Response Consistency}
+  \lab{-4.9}{Đo hold-out, chéo model, đóng băng}
+  \lab{-6.0}{Báo cáo, slide, demo}
+  \node[done,anchor=west] at (0.2,-0.5) {Hoàn thành trước 05/10};
+  \fill[blue!15,draw=blue!60!black] (0.1,-2.0) rectangle (4.7,-1.2);
+  \fill[blue!15,draw=blue!60!black] (1.3,-3.1) rectangle (7.1,-2.3);
+  \fill[blue!15,draw=blue!60!black] (7.3,-4.2) rectangle (11.0,-3.4);
+  \fill[blue!15,draw=blue!60!black] (9.7,-5.3) rectangle (13.1,-4.5);
+  \fill[blue!15,draw=blue!60!black] (11.5,-6.4) rectangle (14.3,-5.6);
+  \draw[dashed,red!70!black] (7.2,0.2) -- (7.2,-6.9); \node[red!70!black,anchor=north] at (7.2,-6.9) {Giữa kỳ 10/10};
+  \draw[dashed,red!70!black] (14.4,0.2) -- (14.4,-6.9); \node[red!70!black,anchor=north east] at (14.4,-6.9) {Nộp cuối 17/10};
+\end{tikzpicture}
+\end{center}
+\vspace{4pt}
+
+\subsection{Tuần 1 (05--10/10): Baseline và ba lớp chuẩn --- mốc giữa kỳ 10/10}
+\begin{itemize}
+  \item \textbf{05--06/10:} dựng agent giả lập trên Qwen3-8B (Ollama), system prompt có canary, kênh tài liệu tách riêng, tool giả lập; harness \code{eval\_asr.py} (3 lần lấy mẫu ở nhiệt độ 0,7 và 1 lần ở nhiệt độ 0, chấm bằng \code{success\_check}, xuất CSV). Song song: Hương vá bộ prompt (mục 2.4).
+  \item \textbf{06--09/10 (song song):} \textbf{L1} lọc đầu vào (NFKC, bỏ ký tự zero-width/homoglyph, thử giải Base64, hex, ROT13 rồi quét lại, từ khoá đa ngôn ngữ); \textbf{L2} bộ phân loại (Llama Prompt Guard~2, cần chấp nhận license trên HuggingFace, hoặc LLM-judge nhỏ; ngưỡng chọn chỉ trên train); \textbf{L3} tách chỉ dẫn đặc quyền (spotlighting, system prompt theo instruction hierarchy).
+  \item \textbf{09--10/10:} chạy ASR baseline và cộng dồn +L1$\to$+L2$\to$+L3 trên train và hold-out, kèm benign refusal rate; khoảng tin cậy Wilson 95\%.
+  \item \textbf{Sản phẩm giữa kỳ (10/10):} bảng ASR cộng dồn và benign refusal rate. Nếu L2 chưa kịp: nộp baseline + L1 + L3, L2 bổ sung tuần 2.
+\end{itemize}
+
+\subsection{Tuần 2 (11--17/10): Lớp cải tiến, hold-out, nộp cuối 17/10}
+\begin{itemize}
+  \item \textbf{11--13/10:} \textbf{L4 --- Dual-Response Consistency Check}: chạy 2 lần (có/không có \code{untrusted\_document}, thay bằng placeholder trung tính); so khớp hai đáp án bằng độ tương đồng embedding và/hoặc LLM-judge; lệch bất thường $\Rightarrow$ gắn cờ. Ngưỡng chọn chỉ trên train; chi phí khoảng $2\times$ số lần gọi model.
+  \item \textbf{13--14/10:} đo trên hold-out (và \code{test\_indist} nếu có) để xem khoảng cách tổng quát hoá; chạy chéo model GLM (hold-out, 1 lần). \textbf{14/10:} đóng băng mã và dữ liệu (tag \code{v1.0}), chạy lại toàn bộ ma trận một lần cuối từ script, không sửa tay.
+  \item \textbf{15--17/10:} phân tích lỗi (nhóm tấn công còn lọt, residual risk, giới hạn), báo cáo LaTeX, slide, demo 1 kịch bản tấn công ``trước/sau'' defense. \textbf{Nộp 17/10.}
+\end{itemize}
+
+\section{Phân công}
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lYY@{}}
+\toprule
+Thành viên & Tuần 1 (05--10/10) & Tuần 2 (11--17/10)\\
+\midrule
+Minh & Điều phối, thống kê (CI Wilson), cập nhật doc tiến độ, bản nộp giữa kỳ & Phân tích kết quả, viết báo cáo LaTeX, slide\\
+Hương & Vá bộ prompt: benign, schema v2 (tool-action, test\_indist nếu kịp) & Phân tích lỗi theo loại tấn công, hỗ trợ báo cáo\\
+Thành & Agent giả lập + harness \code{eval\_asr.py} + baseline & Lớp 4 (cùng Nam), chạy ma trận cuối\\
+Ngọc & L1 (lọc/chuẩn hoá) và L2 (phân loại) & Ablation L1/L2, ngưỡng trên train, hỗ trợ đo hold-out\\
+Nam & L3 (spotlighting/hierarchy), adapter OpenRouter (GLM) & Lớp 4 (cùng Thành), chạy chéo model, demo\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Giao thức đánh giá}
+\begin{itemize}
+  \item \textbf{ASR} = tỉ lệ lượt sinh thoả \code{success\_check}; báo cáo trung bình trên 3 lần lấy mẫu kèm khoảng Wilson 95\%.
+  \item \textbf{Từ chối oan} = tỉ lệ prompt benign bị chặn hoặc từ chối; \textbf{utility} = chất lượng tóm tắt/hỏi đáp trên tập benign (so khớp ý chính với đáp án tham chiếu).
+  \item \textbf{Residual risk} = ASR còn lại sau lớp cuối, theo từng loại tấn công.
+  \item \textbf{Không rò rỉ hold-out}: mọi ngưỡng, từ khoá, prompt hệ thống chỉ được chỉnh dựa trên train; hold-out chạy đúng một lần cho mỗi cấu hình cuối.
+\end{itemize}
+
+\section{Rủi ro và phương án dự phòng}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}YY@{}}
+\toprule
+Rủi ro & Dự phòng\\
+\midrule
+Qwen3-8B chạy chậm trên máy cá nhân & Dùng Qwen3-4B hoặc giảm còn 2 lần lấy mẫu; tắt thinking.\\
+Free tier OpenRouter hết hạn mức & Chỉ chạy hold-out 1 lần; hoặc nạp 10\$ cho nhóm; hoặc thay bằng model local thứ hai.\\
+Lớp 4 không cải thiện rõ & Báo cáo trung thực như kết quả âm kèm phân tích nguyên nhân; vẫn giữ phần kiểm định tổng quát hoá (đóng góp độc lập).\\
+Prompt Guard~2 bị khoá license & Dùng LLM-judge nhỏ làm L2.\\
+Chậm tiến độ 2--3 ngày (lịch chỉ 2 tuần) & Cắt chạy chéo model, R1-distill và \code{test\_indist}; giữ lõi: baseline, L1--L3, hold-out. Nếu L4 không kịp, trình bày như hướng phát triển và giữ phân tích khoảng cách tổng quát hoá.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Tiêu chí hoàn thành}
+\begin{enumerate}
+  \item Repo chạy lại được từ \code{README} (một lệnh sinh toàn bộ bảng kết quả).
+  \item Bảng ASR cộng dồn trên train, test\_indist, hold-out, kèm benign refusal rate.
+  \item Có phần cải tiến thực nghiệm (L4 và/hoặc phân tích khoảng cách tổng quát hoá) với số liệu và hạn chế nêu rõ.
+  \item Báo cáo + slide + demo nộp trước 17/10/2026.
+\end{enumerate}
+
+\end{document}
