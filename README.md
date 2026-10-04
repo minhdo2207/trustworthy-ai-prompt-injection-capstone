@@ -31,7 +31,7 @@ Các nguồn bổ sung: Greshake và cs. 2023 (injection gián tiếp), HackAPro
 | L1 | Lọc đầu vào: chuẩn hoá Unicode, bỏ ký tự vô hình, giải mã Base64/hex/ROT13 rồi quét lại, từ khoá đa ngôn ngữ | Ngọc,Minh|
 | L2 | Bộ phân loại: Llama Prompt Guard 2 (dự phòng: ProtectAI deberta), ngưỡng chọn chỉ trên train | Ngọc, Minh |
 | L3 | Tách chỉ dẫn và dữ liệu, **không huấn luyện**: spotlighting, system prompt theo thứ tự ưu tiên | Nam, Minh |
-| L4 | Kiểm tra nhất quán: cài đặt lại ý tưởng MELON (chạy lại khi bỏ tài liệu, so hành động/lộ canary) | Minh, Thành |
+| L4 | Kiểm tra nhất quán, theo MELON: chạy lại với tác vụ người dùng bị che (giữ nguyên tài liệu); hai lần chạy cho hành vi giống nhau thì tài liệu đang điều khiển model | Minh, Thành |
 
 Instruction Hierarchy, StruQ, SecAlign là phương pháp huấn luyện model, nhóm không làm, chỉ nêu như hướng phát triển.
 
