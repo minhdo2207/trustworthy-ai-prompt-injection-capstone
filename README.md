@@ -1,7 +1,7 @@
 # Capstone — Prompt-Injection Red-Team & Layered Defense for an LLM
 
 Môn học: **Trustworthy AI**
-Nhóm: **Nhóm 4** — Minh (trưởng nhóm), Thành, Ngọc, Hương, Nam
+Nhóm: **Nhóm 4** — Minh, Thành, Ngọc, Hương, Nam
 Thời gian thực nghiệm: **05/10 → 14/10/2026** (giữa kỳ 10/10, nộp cuối 14/10)
 
 ## Mục tiêu
@@ -28,10 +28,10 @@ Các nguồn bổ sung: Greshake và cs. 2023 (injection gián tiếp), HackAPro
 
 | Lớp | Cơ chế | Người phụ trách |
 |---|---|---|
-| L1 | Lọc đầu vào: chuẩn hoá Unicode, bỏ ký tự vô hình, giải mã Base64/hex/ROT13 rồi quét lại, từ khoá đa ngôn ngữ | Ngọc |
-| L2 | Bộ phân loại: Llama Prompt Guard 2 (dự phòng: ProtectAI deberta), ngưỡng chọn chỉ trên train | Ngọc |
-| L3 | Tách chỉ dẫn và dữ liệu, **không huấn luyện**: spotlighting, system prompt theo thứ tự ưu tiên | Nam |
-| L4 | Kiểm tra nhất quán: cài đặt lại ý tưởng MELON (chạy lại khi bỏ tài liệu, so hành động/lộ canary) | Nam, Thành |
+| L1 | Lọc đầu vào: chuẩn hoá Unicode, bỏ ký tự vô hình, giải mã Base64/hex/ROT13 rồi quét lại, từ khoá đa ngôn ngữ | Ngọc,Minh|
+| L2 | Bộ phân loại: Llama Prompt Guard 2 (dự phòng: ProtectAI deberta), ngưỡng chọn chỉ trên train | Ngọc, Minh |
+| L3 | Tách chỉ dẫn và dữ liệu, **không huấn luyện**: spotlighting, system prompt theo thứ tự ưu tiên | Nam, Minh |
+| L4 | Kiểm tra nhất quán: cài đặt lại ý tưởng MELON (chạy lại khi bỏ tài liệu, so hành động/lộ canary) | Minh, Thành |
 
 Instruction Hierarchy, StruQ, SecAlign là phương pháp huấn luyện model, nhóm không làm, chỉ nêu như hướng phát triển.
 
@@ -46,7 +46,7 @@ Instruction Hierarchy, StruQ, SecAlign là phương pháp huấn luyện model, 
 
 | Thành viên | Việc chính | Thư mục |
 |---|---|---|
-| **Minh** (trưởng nhóm) | Điều phối, review, Related Work, script thống kê (khoảng tin cậy Wilson), kiểm tra giải mã, bản giữa kỳ, đóng băng repo (tag `v1.0`), báo cáo, slide, nộp bài | [`docs/`](docs/) |
+| **Minh** | Điều phối, review, Related Work, script thống kê (khoảng tin cậy Wilson), kiểm tra giải mã, bản giữa kỳ, đóng băng repo (tag `v1.0`), báo cáo, slide, nộp bài | [`docs/`](docs/) |
 | **Hương** | Bảng phân loại, gắn nhãn lại 72 prompt (schema v2), bổ sung 4 kiểu cơ bản, mẫu từ dataset có nguồn, tập benign ≥ 50, phụ lục, phân tích lỗi | [`attack_prompts/`](attack_prompts/) |
 | **Ngọc** | L1, L2, ablation và tỉ lệ từ chối oan | [`defenses/`](defenses/) |
 | **Nam** | L3, L4 (logic so khớp), chạy chéo GLM, demo | [`defenses/`](defenses/) |
