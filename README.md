@@ -83,4 +83,3 @@ Phạm vi được ưu tiên: baseline, L1–L3 và kết quả hold-out là ph�
 
 Nhánh `main` đã bị khoá: **mọi thay đổi phải qua pull request** (không bắt buộc approve, nhưng nên nhờ một người xem trước khi merge). Xem [CONTRIBUTING.md](CONTRIBUTING.md) cho cách đặt tên nhánh, định dạng commit và các quy tắc riêng của đề tài (không tinh chỉnh theo hold-out, mọi prompt phải ghi nguồn).
 
-**Báo cáo tiến độ (Claude Doc, đang cập nhật):** https://claude.ai/artifact/X9UckLMTyS9LjZUzSATWNS
