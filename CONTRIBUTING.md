@@ -5,10 +5,9 @@
 ## 1. Nhánh `main` đã bị khoá
 
 - **Không push thẳng lên `main`.** Mọi thay đổi phải đi qua pull request (PR).
-- Mỗi PR cần **ít nhất 1 người khác** approve trước khi merge. Không tự approve PR của mình.
+- Không bắt buộc có người approve, nhưng **nên nhờ một người xem qua trước khi merge**, nhất là PR đụng tới `defenses/` hoặc `attack_prompts/`.
 - Mọi bình luận trong PR phải được giải quyết (resolve) trước khi merge.
 - Không force-push và không xoá nhánh `main`.
-- Thêm commit mới vào PR sau khi đã được approve thì cần được approve lại.
 
 ## 2. Quy trình một thay đổi
 
