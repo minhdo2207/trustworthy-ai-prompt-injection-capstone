@@ -6,7 +6,7 @@ Evaluation Harness - Bo khung danh gia ti le tan cong thanh cong (ASR):
 - Chay danh gia qua BaselineAgent (chua phong thu) hoac L3Defense.
 - Tinh ASR (%) kem phan tich theo tung ky thuat tan cong (technique).
 - Do do tre (Latency) trung binh tren moi mau.
-- Xuat bao cao chi tiet ra JSON.
+- Xuat bao cao chi tiet ra JSON va CSV (cho phan tich Wilson score).
 
 Su dung:
   python eval_asr.py --limit 3                     # Chay thu nhanh 3 mau baseline
@@ -18,6 +18,7 @@ Su dung:
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import re
@@ -168,6 +169,43 @@ def print_summary_table(summary_list: List[dict]):
         print(f"{s['config']:<15} | {s['total_prompts']:<10} | {s['successful_attacks']:<10} | {s['asr_percentage']:>8.1f}% | {s['avg_latency_seconds']:>8.2f}s")
     print("=" * 70)
 
+def save_results_csv(summaries: List[dict], csv_path: Path):
+    """
+    Xuat ket qua danh gia ra file CSV cho script thong ke khoang tin cay Wilson (Minh).
+    Bao gom tung mau don le kem nhan attack_success (1/0) va do tre.
+    """
+    fieldnames = [
+        "config",
+        "id",
+        "technique",
+        "attack_type",
+        "canary",
+        "attack_success",
+        "latency_sec",
+        "target",
+        "error",
+        "response"
+    ]
+    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for summary in summaries:
+            cfg = summary.get("config", "")
+            for r in summary.get("detailed_results", []):
+                resp_clean = (r.get("response", "") or "").replace("\r\n", " ").replace("\n", " ").strip()
+                writer.writerow({
+                    "config": cfg,
+                    "id": r.get("id", ""),
+                    "technique": r.get("technique", ""),
+                    "attack_type": r.get("attack_type", ""),
+                    "canary": r.get("canary", ""),
+                    "attack_success": 1 if r.get("attack_success") else 0,
+                    "latency_sec": round(r.get("latency", 0.0), 3),
+                    "target": r.get("target", ""),
+                    "error": r.get("error", "") or "",
+                    "response": resp_clean
+                })
+
 def main():
     if sys.stdout.encoding.lower() != "utf-8":
         sys.stdout.reconfigure(encoding="utf-8")
@@ -178,6 +216,7 @@ def main():
     parser.add_argument("--holdout", action="store_true", help="Chay tren tap holdout thay vi train.")
     parser.add_argument("--limit", type=int, default=0, help="Gioi han so mau can chay (0 = chay het).")
     parser.add_argument("--out", default="eval_results.json", help="File JSON luu ket qua.")
+    parser.add_argument("--csv", default="eval_results.csv", help="File CSV luu ket qua (cho phan tich Wilson score).")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Model Ollama.")
     parser.add_argument("--host", default=DEFAULT_HOST, help="Host Ollama.")
     parser.add_argument("--task", default=DEFAULT_TASK, help="User task chu dao.")
@@ -213,8 +252,12 @@ def main():
     out_path = ROOT_DIR / "defenses" / args.out
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(summaries if len(summaries) > 1 else summaries[0], f, ensure_ascii=False, indent=2)
+    print(f"\n[OK] Da luu chi tiet JSON vao: {out_path}")
 
-    print(f"\n[OK] Da luu chi tiet danh gia vao: {out_path}\n")
+    if args.csv:
+        csv_path = ROOT_DIR / "defenses" / args.csv
+        save_results_csv(summaries, csv_path)
+        print(f"[OK] Da luu chi tiet CSV vao:  {csv_path}\n")
 
 if __name__ == "__main__":
     main()
