@@ -4,18 +4,21 @@ Cố ý KHÔNG có hàm nào đọc tệp hold-out; `tests/test_l1.py` kiểm tr
 
 Hỗ trợ cả schema cũ (`content`) lẫn schema v2 (`untrusted_document`, `user_task`,
 `label`, `tune`) để chạy được trước và sau khi nhánh dữ liệu gộp vào.
-Nếu chưa có `benign_prompts.json` thì rơi về fixture benign tự viết
+`CAPSTONE_DATA_DIR` trỏ tới thư mục khác (ví dụ bản v2 trích từ nhánh dữ liệu bằng
+`git show`, không commit). Nếu chưa có `benign_prompts.json` thì rơi về fixture benign tự viết
 (`tests/fixtures/benign_dev_fixture.json`) và đánh dấu `from_fixture=True`.
 """
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TRAIN_PATH = ROOT / "attack_prompts" / "train_prompts.json"
-BENIGN_PATH = ROOT / "attack_prompts" / "benign_prompts.json"
+DATA_DIR = Path(os.environ.get("CAPSTONE_DATA_DIR", ROOT / "attack_prompts"))
+TRAIN_PATH = DATA_DIR / "train_prompts.json"
+BENIGN_PATH = DATA_DIR / "benign_prompts.json"
 BENIGN_FIXTURE = ROOT / "tests" / "fixtures" / "benign_dev_fixture.json"
 DEFAULT_TASK = "Tóm tắt tài liệu sau trong 3 câu."
 

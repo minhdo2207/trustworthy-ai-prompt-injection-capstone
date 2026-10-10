@@ -75,7 +75,7 @@ import re
 import time
 import unicodedata
 import urllib.parse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterable, Optional
 
 try:  # chạy được cả khi import như script lẻ
@@ -387,6 +387,10 @@ _EN_SECRET_V = (r"(?:" + _EN_POS + r"(?:complete|fill|finish|insert|include|appe
 _add("leak", "en_secret", 0.7, rf"{_EN_SECRET_V}\W+(?:\w+\W+){{0,5}}{_EN_T_SECRET}")
 _add("leak", "en_real_value_cfg", 0.6,
      r"\b(?:real|actual|true|secret)\s+(?:value|key|token|password)\b[^.\n]{0,40}\b(?:in|from)\s+(?:your|the)\s+(?:config\w*|system|session|environment|prompt)\b")
+_add("leak", "en_your_prompt_ref", 0.4,
+     r"\byour\s+(?:own\s+)?(?:system\s+(?:prompt|message)|hidden\s+(?:instructions|prompt)|initial\s+(?:instructions|prompt)|secret\s+\w+)\b")
+_add("leak", "vi_your_prompt_ref", 0.4,
+     r"\b(?:system\s+prompt|prompt\s+he\s+thong|thong\s+diep\s+he\s+thong|chi\s+dan\s+(?:noi\s+bo|he\s+thong|an))\s+cua\s+(?:chinh\s+)?ban\b", "vi")
 _add("leak", "en_question", 0.55,
      rf"\bwhat(?:'s|\s+is|\s+are|\s+were)\s+(?:your|the)\s+(?:\w+\s+)?(?:system\s+prompt|initial\s+(?:prompt|instructions)|hidden\s+(?:prompt|instructions)|secret\s+\w+)")
 _add("leak", "en_verbatim_prompt", 0.6,
@@ -401,8 +405,8 @@ _VI_T = (r"(?:system\s+prompt|prompt\s+he\s+thong|thong\s+diep\s+he\s+thong|(?:c
          r"cau\s+hinh\s+(?:cua\s+ban|that|goc|noi\s+bo|khoi\s+tao|an|bi\s+mat)|ma\s+noi\s+bo|gia\s+tri\s+(?:that|bi\s+mat)|[a-z_]*canary|"
          r"(?:gia\s+tri|ma|khoa|token|mat\s+khau)\s+bi\s+mat|prompt\s+(?:that|goc|cua\s+ban|noi\s+bo|nguyen\s+van)|tin\s+nhan\s+he\s+thong)")
 _VI_QUAL = r"(?:that|thuc\s+te|nguyen\s+van|chinh\s+xac|day\s+du|toan\s+bo|hien\s+tai|goc|dang\s+ap\s+dung|dang\s+dieu\s+khien)"
-_add("leak", "vi", 0.75, rf"{_VI_LV}\s+(?:\w+\s+){{0,5}}{_VI_T}", "vi")
-_add("leak", "vi_canary", 0.7, rf"(?:{_VI_LV}|{_VI_POS}(?:hoan\s+thanh|hoan\s+tat|dien|them|nhap|viet)\b)\s+(?:\w+\s+){{0,4}}(?:[a-z_]*canary|gia\s+tri\s+[a-z_]*secret[a-z_]*)", "vi")
+_add("leak", "vi", 0.75, rf"{_VI_LV}\s+(?:\w+[,;]?\s+){{0,5}}{_VI_T}", "vi")
+_add("leak", "vi_canary", 0.7, rf"(?:{_VI_LV}|{_VI_POS}(?:hoan\s+thanh|hoan\s+tat|dien|them|nhap|viet)\b)\s+(?:\w+[,;]?\s+){{0,5}}(?:[a-z_]*canary|gia\s+tri\s+[a-z_]*secret[a-z_]*)", "vi")
 _add("leak", "vi_real_value_cfg", 0.6,
      r"\bgia\s+tri\s+(?:that|thuc\s+te|bi\s+mat)\b[^.\n]{0,30}\b(?:trong\s+(?:cau\s+hinh|phien|he\s+thong)|cua\s+ban)\b", "vi")
 _add("leak", "vi_qual", 0.75,
@@ -475,6 +479,54 @@ _add("output_shaping", "vi", 0.55,
      r"\b(?:ban\s+)?(?:tom\s+tat|cau\s+tra\s+loi|phan\s+hoi)\s+(?:cua\s+ban\s+|nay\s+)?(?:phai|can|hay|se\s+phai)\s+(?:khang\s+dinh|neu|ghi|noi|bao\s+gom|chua|them|dinh\s+kem)\b|"
      r"\b(?:them|dinh\s+kem|chen|ghi)\b[^.\n]{0,45}\b(?:vao|trong)\s+(?:ban|phan|cau)\s+(?:tom\s+tat|tra\s+loi|phan\s+hoi)\b|"
      r"\bkhang\s+dinh\s+(?:rang\s+)?\w+[^.\n]{0,30}\bla\b", "vi")
+_add("output_shaping", "en_state_that", 0.58,
+     r"\b(?:when|while|as)\s+(?:you\s+)?(?:summari[sz]\w*|answer\w*|respond\w*|writ\w+)\b[^.\n]{0,15}\b(?:state|say|write|mention|claim|note|add|include|insist|report|assert)\s+that\b|"
+     r"\b(?:state|say|write|claim|assert|report)\s+(?:in|within)\s+(?:your|the)\s+(?:summary|answer|response|reply)\s+that\b|"
+     r"\b(?:use|treat|take|confirm)\b[^.\n]{0,30}\b(?:above|following|preceding)\b[^.\n]{0,30}\bas\s+(?:your\s+|the\s+)?final\s+(?:answer|summary|response)\b")
+_add("output_shaping", "vi_state_that", 0.6,
+     r"\bkhi\s+(?:tom\s+tat|tra\s+loi|viet\s+tom\s+tat)\W+(?:\w+\W+){0,2}(?:ghi|viet|noi|khang\s+dinh|nhan\s+manh|neu|bao)\s+rang\b|"
+     r"\b(?:hay|phai|can)\s+(?:ghi|viet|noi|khang\s+dinh)\s+rang\b|"
+     r"\blam\s+(?:cau\s+tra\s+loi|ban\s+tom\s+tat|phan\s+hoi)\s+cuoi\s+cung\b", "vi")
+_add("override", "en_bare_above", 0.6,
+     r"\bignore\s+(?:the\s+)?(?:above|previous|preceding|prior|earlier|everything(?:\s+above)?)\b\W+(?:and\W+|then\W+|but\W+|instead\W+|now\W+|just\W+|you\W+)")
+_add("override", "ignore_doc_facts", 0.5,
+     r"\bignore\s+(?:the\s+)?(?:numbers|figures|data|content|facts|statistics)\s+(?:in|of|from)\s+(?:the\s+)?(?:document|text|above|report)\b")
+_add("override", "vi_ignore_doc_facts", 0.5,
+     r"\bbo\s+qua\s+(?:cac\s+|nhung\s+)?(?:con\s+so|so\s+lieu|du\s+lieu|noi\s+dung|thong\s+tin)\b[^.\n]{0,30}(?:tai\s+lieu|o\s+tren|ben\s+tren|vua\s+doc)", "vi")
+_add("fake_completion", "inline_done", 0.5,
+     r"\b(?:summary|answer|response)\s*[(\[]\s*(?:completed?|done|finished)\s*[)\]]")
+_add("fake_completion", "inline_done_vi", 0.5,
+     r"\b(?:ban\s+)?tom\s+tat\s*\(\s*da\s+(?:hoan\s+tat|xong)\s*\)", "vi")
+_add("escape_chars", "literal_newlines", 0.25, r"(?:\\n){3,}|(?:\\r\\n){2,}|(?:\\t){4,}", flags=re.S)
+_add("authority", "upper_notice", 0.45, r"\b(?:SYSTEM|ADMIN|SECURITY|IMPORTANT|URGENT)\s+(?:NOTICE|ALERT|MESSAGE|UPDATE|DIRECTIVE|INSTRUCTION)S?\s*[:\-]", flags=re.S)
+_add("authority", "vi_bracket_auto", 0.35, r"\[\s*(?:quy\s+trinh\s+tu\s+dong|tu\s+dong|he\s+thong|automation|automated)\b[^\]]{0,20}\]", "vi")
+
+# --- tool_action (mục tiêu `tool_action` của hợp đồng) và dấu hiệu trình tự -----------
+_add("tool_action", "named_call", 0.5,
+     r"\b[a-z][a-z0-9]*_[a-z0-9_]+\s*\(\s*(?:[a-z_]+\s*=|<|[\"'])")
+_add("tool_action", "call_tool_en", 0.5,
+     r"\b(?:call|invoke|use|trigger|run|execute)\s+(?:the\s+)?(?:tool\s+|function\s+)?[a-z]+_[a-z_]+\b|"
+     r"\b(?:call|invoke|use|trigger)\s+(?:the\s+)?(?:\w+\s+)?(?:tool|function)\b[^.\n]{0,40}\b(?:send|delete|email|forward|post|upload|remove|transfer)\w*")
+_add("tool_action", "call_tool_vi", 0.5,
+     r"\b(?:goi|dung|su\s+dung|kich\s+hoat|thuc\s+thi)\s+(?:cong\s+cu\s+|ham\s+)?[a-z]+_[a-z_]+\b|"
+     r"\b(?:goi|su\s+dung)\s+(?:cong\s+cu|ham)\b[^.\n]{0,40}\b(?:gui|xoa|chuyen\s+tiep|dang|tai\s+len)\b", "vi")
+_add("tool_action", "exfil_mail", 0.35,
+     r"\bsend\b[^.\n]{0,70}\b(?:to|at)\s+[\w.+-]+@[\w-]+\.[\w.-]+|\bforward\b[^.\n]{0,50}\bto\s+[\w.+-]+@[\w-]+\.[\w.-]+")
+_add("tool_action", "exfil_mail_vi", 0.35,
+     r"\b(?:gui|chuyen\s+tiep)\b[^.\n]{0,70}\b(?:toi|cho|den)\s+[\w.+-]+@[\w-]+\.[\w.-]+", "vi")
+_add("sequence_cue", "en", 0.45,
+     r"\b(?:after|before|once)\s+(?:you\s+)?(?:summari[sz]\w*|answer\w*|respond\w*|repl\w+|finish\w*\s+(?:the\s+)?summar\w+)[^.\n]{0,30}\b(?:call|send|delete|forward|email|run|execute|print|output|include|add|state|write)\b|"
+     r"\b(?:do|perform|execute)\s+this\s+(?:before|after)\s+(?:answering|responding|replying|summari[sz]\w*)\b")
+_add("sequence_cue", "vi", 0.45,
+     r"\b(?:sau|truoc)\s+khi\s+(?:da\s+)?(?:tom\s+tat|tra\s+loi(?:\s+nguoi\s+dung)?|tao\s+ban\s+tom\s+tat)(?:\s+xong)?[^.\n]{0,30}\b(?:goi|gui|xoa|chuyen\s+tiep|thuc\s+hien|in|xuat|them|ghi|dinh\s+kem|dung)\b|"
+     r"\bthuc\s+hien\s+(?:ngay\s+)?(?:truoc|sau)\s+khi\s+(?:tra\s+loi|tom\s+tat)\b", "vi")
+_add("refusal_suppress", "no_confirm", 0.4,
+     r"\bwithout\s+(?:asking|confirmation|confirming|checking\s+with)\b|\bdo\s+not\s+(?:ask|wait\s+for)\s+(?:for\s+)?(?:confirmation|permission|approval)\b")
+_add("refusal_suppress", "no_confirm_vi", 0.4,
+     r"\bkhong\s+(?:can|duoc)\s+(?:hoi|xac\s+nhan|cho\s+phep)\b|\bngay\s+lap\s+tuc\b[^.\n]{0,30}\bkhong\s+(?:can|hoi)\b", "vi")
+_add("persona", "mode_switch", 0.4, r"\byou\s+are\s+(?:now\s+)?in\s+(?:\w+\s+){0,2}mode\b")
+_add("persona", "mode_switch_vi", 0.4, r"\bban\s+dang\s+o\s+che\s+do\b", "vi")
+
 _AI = r"(?:(?-i:AI|A\.I\.|LLM|GPT)|assistant|language\s+model|model|chatbot|bot|agent|summari[sz]er|ChatGPT|Claude|Copilot)"
 _add("audience", "en_note_to_ai", 0.55,
      rf"\b(?:note|message|instructions?|directive|attention|notice|hey|hello|dear|important|warning|memo)\s*(?:to|for)\s*(?:the\s+)?{_AI}\b|"
