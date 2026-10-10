@@ -123,15 +123,19 @@ class CarrierAssigner:
         self.rng.shuffle(batch)
         self.queue.extend(batch)
 
-    def take(self, pinned: str | None = None) -> str:
+    def take(self, pinned: str | None = None, avoid: str | None = None) -> str:
         if pinned:
             self.usage[pinned] += 1
             return pinned
-        if not self.queue:
-            self._refill()
-        cid = self.queue.pop(0)
-        self.usage[cid] += 1
-        return cid
+        for _ in range(len(self.ids) + 1):
+            if not self.queue:
+                self._refill()
+            cid = self.queue.pop(0)
+            if cid != avoid:
+                self.usage[cid] += 1
+                return cid
+            self.queue.append(cid)
+        raise RuntimeError("không chọn được tài liệu nền")
 
 
 def position_for(item_id: str) -> str:
@@ -206,12 +210,20 @@ def optional_module(name: str):
 
 
 def build_new_attack(spec: dict, assigner: CarrierAssigner, carriers: dict[str, dict]) -> dict:
-    """Dựng một prompt viết tay: tài liệu nền + payload (x_t ⊕ c ⊕ s_e ⊕ x_e)."""
-    cid = assigner.take(spec.get("carrier"))
-    pos = spec.get("position", "end")
-    default_joiner = "" if spec["payload"][:1].isspace() else "\n\n"
-    doc = embed(carriers[cid]["text"], spec["payload"], pos, spec.get("joiner", default_joiner))
-    notes = f"carrier_id={cid}; position={pos}"
+    """Dựng một prompt viết tay: tài liệu nền + payload (x_t ⊕ c ⊕ s_e ⊕ x_e).
+
+    Nếu spec có `document` thì dùng nguyên văn (không ghép tài liệu nền).
+    """
+    if "document" in spec:
+        doc, cid, pos = spec["document"], None, "in_document"
+        if spec["payload"] not in doc:
+            raise ValueError(f"{spec['id']}: payload không nằm trong document")
+    else:
+        cid = assigner.take(spec.get("carrier"), spec.get("avoid_carrier"))
+        pos = spec.get("position") or position_for(spec["id"])
+        default_joiner = "" if spec["payload"][:1].isspace() else "\n\n"
+        doc = embed(carriers[cid]["text"], spec["payload"], pos, spec.get("joiner", default_joiner))
+    notes = f"carrier_id={cid or 'none'}; position={pos}"
     if spec.get("notes"):
         notes += "; " + spec["notes"]
     rec = {
@@ -228,6 +240,21 @@ def build_new_attack(spec: dict, assigner: CarrierAssigner, carriers: dict[str, 
     if spec.get("paraphrase_of"):
         rec["paraphrase_of"] = spec["paraphrase_of"]
     return rec
+
+
+def inherit_from_train(spec: dict, train_by_id: dict[str, dict]) -> dict:
+    """Paraphrase giữ nguyên họ tấn công, technique, mục tiêu của bản gốc (đúng nghĩa 'trong phân phối')."""
+    src = train_by_id[spec["paraphrase_of"]]
+    out = {
+        "split": "test_indist", "attack_type": src["attack_type"], "liu_type": src["liu_type"],
+        "technique": src["technique"], "goal_type": src["goal_type"], "target": src["target_description"],
+        "success_check": src["success_check"], "ref": src["source"]["ref"],
+        "avoid_carrier": (re.search(r"carrier_id=(C\d+)", src["notes"]) or [None, None])[1],
+        "position": (re.search(r"position=(start|middle|end)", src["notes"]) or [None, None])[1],
+    }
+    out.update(spec)
+    out["notes"] = f"paraphrase của {src['id']}" + (f"; {spec['notes']}" if spec.get("notes") else "")
+    return out
 
 
 def main() -> None:
@@ -252,7 +279,8 @@ def main() -> None:
 
     indist = optional_module("src_indist")
     if indist is not None:
-        recs = [build_new_attack(s, assigner, carriers) for s in indist.SPECS]
+        by_id = {r["id"]: r for r in train}
+        recs = [build_new_attack(inherit_from_train(s, by_id), assigner, carriers) for s in indist.SPECS]
         dump_json(HERE / "test_indist_prompts.json", recs)
         print(f"test_indist={len(recs)}")
 
