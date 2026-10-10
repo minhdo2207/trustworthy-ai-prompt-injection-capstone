@@ -1,0 +1,28 @@
+\section{Kết luận và bài học}\label{sec:conclusion}
+
+\subsection{Tóm tắt kết quả}
+Báo cáo đo tấn công tiêm lệnh gián tiếp trên một LLM chạy cục bộ (\modelname) với tác vụ tóm tắt tài liệu tiếng Việt, và đo bốn lớp phòng thủ không huấn luyện cộng dồn. Phần này sẽ được điền sau khi có số liệu; mỗi gạch đầu dòng trả lời một câu hỏi nghiên cứu.
+\begin{itemize}
+  \item \textbf{RQ1.} ASR của mô hình trần: \TODO{điền theo số liệu: ASR baseline trên train và hold-out, loại tấn công mạnh nhất}.
+  \item \textbf{RQ2.} Hiệu quả và đánh đổi: \TODO{điền theo số liệu: ASR sau từng lớp; $\FRR$, $\Util$, $\rho_N$, $\rho_T$ của cấu hình cuối; lớp đáng giá nhất; L4 có đáng giá không}.
+  \item \textbf{RQ3.} Tổng quát hoá: \TODO{điền theo số liệu: $\Delta_{\mathrm{gen}}$ của cấu hình cuối và lớp quá khớp nhất}.
+\end{itemize}
+Kết quả âm, nếu có (ví dụ L4 không tách được tấn công khỏi tài liệu sạch), được báo cáo như một phát hiện, kèm phân tích nguyên nhân ở \cref{sec:error}. Mọi kết luận chỉ áp dụng cho thiết lập đã mô tả và bị giới hạn bởi các hạn chế ở \cref{sec:limits}: mô hình nhỏ và khác mô hình dự kiến, tác vụ tĩnh, bộ prompt nhỏ, kẻ tấn công không thích ứng, và L4 là cài đặt lại một ý tưởng ở bối cảnh khác.
+
+\subsection{Bài học}
+Một số bài học về phương pháp không phụ thuộc vào con số cuối cùng:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Đo ASR cùng với cái giá phải trả.} Một phòng thủ giảm ASR bằng cách chặn gần như mọi tài liệu có vẻ ``tốt'' nếu chỉ nhìn ASR; đó cũng là cảnh báo của \citet{wang2026landscape}. Vì vậy tập benign có chủ đích chứa cụm từ dễ chặn nhầm~\citep{li2024injecguard} và việc báo cáo $\FRR$, $\Util$, độ trễ cạnh ASR là bắt buộc, không phải phần phụ.
+  \item \textbf{Kỷ luật hold-out quyết định giá trị của con số.} Chia train/hold-out/benign-tune, đóng băng cấu hình trước khi chạy hold-out và cấm các lớp đọc đáp án là điều kiện để $\Delta_{\mathrm{gen}}$ có nghĩa; những kiểm soát này rẻ so với việc phải giải thích lại số liệu sau.
+  \item \textbf{Ý tưởng tốt ở bối cảnh này chưa chắc chuyển sang bối cảnh khác.} MELON được thiết kế cho tác tử gọi công cụ; chuyển sang LLM đọc văn bản thay đổi đại lượng cần so sánh và làm lộ một điểm yếu mà chính bài gốc đã nêu~\citep{zhu2025melon}. Nên thử một ý tưởng phòng thủ trên cả tập tấn công lẫn tập benign trước khi tin vào nó.
+  \item \textbf{Bài học theo dữ liệu.} \TODO{điền theo số liệu: những điều bất ngờ về lớp nào hiệu quả, loại tấn công nào bền vững, chi phí thực sự của từng lớp}.
+\end{enumerate}
+
+\subsection{Hướng phát triển}
+\begin{itemize}
+  \item \textbf{Phòng thủ có huấn luyện.} Tinh chỉnh hoặc căn chỉnh mô hình để ưu tiên chỉ dẫn đáng tin: Instruction Hierarchy~\citep{wallace2024hierarchy}, StruQ~\citep{chen2025struq}, SecAlign~\citep{chen2025secalign}; hoặc thiết kế kiến trúc tách luồng điều khiển và dữ liệu như CaMeL~\citep{debenedetti2025camel}.
+  \item \textbf{Dữ liệu lớn và đa dạng hơn.} Thêm BIPIA~\citep{yi2025bipia}, Tensor Trust~\citep{toyer2024tensortrust}, và các bộ prompt thực như Gandalf (xem phụ lục C) làm nguồn tấn công và benign; mở rộng sang nhiều tác vụ ngoài tóm tắt.
+  \item \textbf{Mô hình lớn hơn và nhiều họ mô hình.} Chạy lại trên Qwen3-8B~\citep{yang2025qwen3} và ít nhất một họ mô hình khác để kiểm tra tính chuyển giao của xu hướng.
+  \item \textbf{Tấn công thích ứng.} Thêm kẻ tấn công biết kiến trúc phòng thủ và tối ưu payload theo phản hồi, theo cách phân loại heuristic/tối ưu hoá của \citet{wang2026landscape}; đo lại L2 trước kiểu tấn công vào bộ chấm~\citep{choudhary2025hownot}.
+  \item \textbf{Tác tử và công cụ thật.} Đưa L4 về đúng bối cảnh của MELON (so sánh lời gọi công cụ) trên môi trường như AgentDojo~\citep{debenedetti2024agentdojo}, và thử các tín hiệu bên trong mô hình như activation~\citep{abdelnabi2025drift} khi có quyền truy cập.
+\end{itemize}

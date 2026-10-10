@@ -1,0 +1,110 @@
+\section{Phương pháp sử dụng}\label{sec:method}
+
+\begin{notebox}[title={Phạm vi mô tả}]
+Mục này mô tả cơ chế theo \emph{thiết kế} của nhóm. Mã nguồn của các lớp vẫn đang được hoàn thiện khi viết bản khung này; các tham số cụ thể (ngưỡng, danh sách từ khoá, biến thể L3 được chọn, chuỗi che của L4) sẽ được đối chiếu với bản mã đóng băng và ghi vào phụ lục D. Chỗ nào chưa chốt được đánh dấu rõ.
+\end{notebox}
+
+\subsection{Kiến trúc tổng thể}
+\Cref{fig:pipeline} cho thấy chuỗi xử lý. Thứ tự cố định là L1$\to$L2$\to$L3$\to$mô hình$\to$L4: các lớp rẻ và có thể chặn sớm (L1, L2) đứng trước để tiết kiệm lời gọi mô hình; L3 không chặn mà chỉ định dạng lại đầu vào; L4 cần phản hồi của mô hình nên đứng cuối. Mỗi lớp tuân theo cùng một giao diện: nhận $(s_t, \text{tài liệu})$ và trả về một \code{LayerResult} gồm \code{action} (\textsf{pass}, \textsf{sanitize} hoặc \textsf{block}), tài liệu sau xử lý, điểm nghi ngờ (nếu có), lý do ngắn, thời gian chạy của riêng lớp, và hai trường chỉ L3 dùng là phần bổ sung cho system prompt \code{system\_addendum} và phần nối cuối thông điệp \code{user\_suffix}. Khi một lớp trả \textsf{block}, harness không gọi mô hình, ghi \code{blocked=1} cùng lớp chặn và trả câu từ chối cố định. L4 có chữ ký riêng \code{check\_after(user\_task, document, first\_response, generate)} vì cần gọi lại mô hình. Nhờ giao diện chung, mỗi lớp chạy độc lập được và harness ghép được các cấu hình bất kỳ (baseline, L1, L1+L2, L1+L2+L3, L1+L2+L3+L4 và các cấu hình ablation).
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig_pipeline}}
+\caption{Kiến trúc phòng thủ nhiều lớp. Đường nét đứt đỏ là các nhánh chặn; L1, L2 chặn \emph{trước} khi gọi mô hình, L4 chặn sau lần gọi thứ nhất. L3 bổ sung $\sigma_+$ và $u_+$ cho lời gọi mô hình.}\label{fig:pipeline}
+\end{figure}
+
+Tác vụ đích là tóm tắt hoặc hỏi đáp một tài liệu. System prompt gồm vai trò trợ lý và một dòng chứa canary; thông điệp người dùng gồm $s_t$ và tài liệu. Canary được sinh ngẫu nhiên cho mỗi lần chạy nên một lớp phòng thủ không thể ``học thuộc'' đáp án. Với mục tiêu \texttt{tool\_action}, một agent giả lập ghi nhận lời gọi công cụ giả (ví dụ \code{send\_email}) mà không có tác dụng thật.
+
+\subsection{L1: lọc và chuẩn hoá đầu vào}
+\paragraph{Cơ chế.} L1 là bộ lọc dựa trên quy tắc, không gọi mô hình. Ý tưởng là đưa tài liệu về dạng chuẩn rồi quét lại, vì nhiều kỹ thuật che giấu chỉ làm thay đổi \emph{hình thức} mà không đổi nội dung. Các bước, theo thứ tự:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Chuẩn hoá NFKC} (Unicode) để gộp các dạng chữ tương đương về dạng chung (ví dụ chữ toàn chiều rộng).
+  \item \textbf{Loại ký tự vô hình}: xoá ký tự độ rộng bằng không và các ký tự điều khiển hướng chữ, vốn có thể chèn vào giữa từ khoá để lách so khớp. Lưu ý rằng NFKC \emph{không} tự xoá các ký tự này, nên cần bước riêng (xem ví dụ ở phụ lục B).
+  \item \textbf{Ánh xạ homoglyph}: thay chữ Cyrillic hoặc Hy Lạp trông giống chữ Latinh bằng chữ Latinh tương ứng, và gộp chuỗi ký tự rời bị tách bằng dấu cách hay dấu gạch nối. Hai dạng này xuất hiện trong nhóm kỹ thuật che giấu của tập train (\code{cyrillic\_homoglyph}, \code{roman\_homoglyph}, \code{spaced\_letters}, \code{hyphenated\_letters}).
+  \item \textbf{Giải mã đệ quy}: tìm các đoạn có dạng Base64 hoặc hex, thử giải mã; thử ROT13 trên toàn văn; nếu kết quả là văn bản in được thì thêm vào tập các biến thể cần quét và lặp lại tối đa $d_{\max}$ mức.
+  \item \textbf{Quét họ mẫu đa ngôn ngữ}: các cụm và biểu thức chính quy thể hiện hành vi ``bỏ qua chỉ dẫn'', ``lộ system prompt'', ``vai không bị ràng buộc'', cho tiếng Việt, Anh, Pháp, Tây Ban Nha, Đức. Danh sách chỉ được xây từ tập train.
+\end{enumerate}
+\Cref{alg:l1} tóm tắt luồng quyết định.
+
+\begin{algorithm}[t]
+\caption{L1 --- lọc và chuẩn hoá đầu vào}\label{alg:l1}
+\small
+\begin{algorithmic}[1]
+\Require tài liệu $x$; họ mẫu $\mathcal{K}$ (từ train); độ sâu giải mã tối đa $d_{\max}$
+\Ensure $(a_1, x^{(1)})$ với $a_1\in\{\mathsf{pass},\mathsf{sanitize},\mathsf{block}\}$
+\State $x' \gets \mathrm{Homoglyph}\bigl(\mathrm{StripInvisible}(\mathrm{NFKC}(x))\bigr)$;\quad $V \gets \{x'\}$;\quad $F \gets \{x'\}$
+\For{$d = 1,\dots,d_{\max}$} \Comment{$V$: biến thể cần quét; $F$: biên giải mã}
+  \State $F \gets \{w:\ v\in F,\ w\in \mathrm{DecodeCandidates}(v),\ w \text{ in được},\ w\notin V\}$ \Comment{Base64, hex; ROT13 toàn văn}
+  \State $V \gets V\cup F$
+\EndFor
+\If{$\exists\, v\in V,\ r\in\mathcal{K}:\ r \text{ khớp } v$} \State \Return $(\mathsf{block},\ x)$ \Comment{ghi lý do, ví dụ \texttt{base64\_decoded:...}}
+\ElsIf{$x' \neq x$} \State \Return $(\mathsf{sanitize},\ x')$
+\Else{} \State \Return $(\mathsf{pass},\ x)$
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tham số và nguồn.} Tham số gồm $d_{\max}$, độ dài tối thiểu của đoạn được thử giải mã và danh sách họ mẫu: $d_{\max}$ = \FILL{giá trị}. Nguồn: đây là kỹ thuật làm sạch đầu vào thông dụng, cùng tinh thần tiền xử lý đầu vào với paraphrase và retokenization trong \citet{jain2023baseline} nhưng nhằm bảo toàn nội dung; không có bài báo riêng cho tổ hợp này nên nhóm xem đây là phần \emph{tự thiết kế}. \paragraph{Hạn chế.} (i) Danh sách từ khoá xây từ train nên dễ quá khớp với cách diễn đạt của train; hold-out và \code{test\_indist} đo đúng điểm này. (ii) Rủi ro chặn nhầm tài liệu lành tính bàn về chính chủ đề tấn công (ví dụ bài hướng dẫn về system prompt), nên tập benign cố ý chứa những tài liệu như vậy~\citep{li2024injecguard}. (iii) Kẻ tấn công có thể dùng mã hoá nằm ngoài tập bộ giải mã. (iv) Tài liệu hợp lệ chứa chuỗi Base64 (ví dụ khoá, hình nhúng) có thể bị xử lý không cần thiết.
+
+\subsection{L2: bộ phân loại bằng LLM nhỏ}
+\paragraph{Cơ chế.} L2 dùng một LLM nhỏ (\texttt{\judgeid}) làm bộ chấm (LLM-judge). Bộ chấm nhận tài liệu, được chỉ dẫn rằng nội dung là \emph{dữ liệu cần kiểm tra} và phải ước lượng khả năng tài liệu chứa chỉ dẫn nhắm vào trợ lý AI (thay vì thông tin cho con người đọc), rồi trả điểm $\pi_2\in[0,1]$. Hệ thống chặn khi $\pi_2 \ge \theta_2$. Cách lấy điểm từ đầu ra của bộ chấm và nội dung đầy đủ của prompt chấm là \FILL{xác nhận theo mã đóng băng}.
+
+\paragraph{Chọn ngưỡng.} $\theta_2$ chỉ được chọn trên train và $\mathcal{B}_{\mathrm{tune}}$: duyệt các ngưỡng, ở mỗi ngưỡng đo tỉ lệ chặn trên tấn công train và $\FRR$ trên benign-tune, rồi chọn ngưỡng theo quy tắc chốt trước khi chạy hold-out (\FILL{quy tắc, ví dụ tối đa hoá tỉ lệ chặn với FRR không vượt ngưỡng}). Đường quét ngưỡng được vẽ ở \cref{fig:sweep}.
+
+\paragraph{Backend Prompt Guard.} Mã L2 có chỗ cắm cho Llama Prompt Guard~2~\citep{promptguard2}, bộ phân loại 22M/86M tham số do Meta công bố. Backend này \textbf{chưa được dùng} trong các kết quả của báo cáo vì mô hình có kiểm soát truy cập; nếu dùng, phải ghi lại giấy phép và giới hạn độ dài đầu vào (512 token theo model card, nên tài liệu dài cần chia đoạn).
+
+\paragraph{Hạn chế.} Bộ chấm đọc đúng văn bản không tin cậy, nên bản thân nó có thể bị tiêm lệnh (ví dụ tài liệu bảo bộ chấm cho điểm thấp); \citet{choudhary2025hownot} cho thấy kiểu phát hiện dựa trên đầu ra của một LLM có thể bị lách bằng tấn công thích ứng. Ngoài ra bộ chấm cùng họ Qwen với mô hình chính nên các lỗi có thể tương quan, và mỗi lần chấm là thêm một lời gọi (tuy mô hình nhỏ hơn).
+
+\subsection{L3: tách chỉ dẫn khỏi dữ liệu, không huấn luyện}
+\paragraph{Cơ chế.} L3 không chặn; nó định dạng lại cách tài liệu và chỉ dẫn được đưa vào prompt để mô hình dễ nhận ra đâu là dữ liệu. L3 gồm các thành phần có thể bật riêng:
+\begin{itemize}
+  \item \textbf{Delimiting}: bọc tài liệu giữa hai dấu ranh giới, kèm chỉ dẫn rằng nội dung bên trong chỉ là dữ liệu~\citep{hines2024spotlighting}. Dấu ranh giới nên khó đoán để tài liệu không giả mạo được ranh giới (kỹ thuật \code{boundary\_forgery} xuất hiện trong bộ prompt).
+  \item \textbf{Datamarking}: thay mọi khoảng trắng của tài liệu bằng một ký hiệu đặc biệt $\mu$ và nói với mô hình rằng văn bản có $\mu$ xen giữa các từ là dữ liệu, không phải chỉ dẫn~\citep{hines2024spotlighting}.
+  \item \textbf{Encoding}: mã hoá tài liệu bằng Base64 để mô hình đọc như một dữ liệu tách biệt~\citep{hines2024spotlighting}; mô hình nhỏ có thể đọc kém dạng này nên ảnh hưởng tới utility.
+  \item \textbf{Thứ tự ưu tiên (hierarchy)}: $\sigma_+$ nêu rằng system prompt có ưu tiên cao nhất, rồi yêu cầu của người dùng, còn tài liệu chỉ là dữ liệu, mọi câu mang tính mệnh lệnh trong tài liệu phải bị bỏ qua và không được tiết lộ canary. Đây chỉ là mô phỏng bằng prompt của ý tưởng trong \citet{wallace2024hierarchy}; khác với bài gốc, mô hình \emph{không} được huấn luyện để tuân theo thứ tự này.
+  \item \textbf{Sandwich và nhắc lại}: $u_+$ nhắc lại $s_t$ sau khối tài liệu~\citep{liu2024formalizing} và thêm lời nhắc tường minh rằng tài liệu có thể chứa chỉ dẫn không đáng tin~\citep{yi2025bipia}. Theo ghi chép đối chiếu của nhóm với \citet{liu2024formalizing}, sandwich làm giảm chất lượng tác vụ khi không bị tấn công, nên cần đo utility.
+\end{itemize}
+Biến thể và tổ hợp cuối cùng được chọn trên train và benign-tune: \FILL{cấu hình L3 chốt}. Với tài liệu $x^{(2)}$ ($x^{(1)}$ nếu L2 không đổi tài liệu), kết quả là $(x^{(3)}, \sigma_+, u_+) = \mathrm{L3}(s_t, x^{(2)})$, ví dụ datamarking cho $x^{(3)} = x^{(2)}[\text{khoảng trắng}\to\mu]$.
+
+\paragraph{Hạn chế.} Vì không huấn luyện, L3 chỉ làm tăng xác suất mô hình tuân thủ ranh giới mà không bảo đảm; mô hình nhỏ có thể vẫn làm theo lệnh trong dữ liệu. Các phương pháp huấn luyện như StruQ~\citep{chen2025struq} và SecAlign~\citep{chen2025secalign} giải quyết vấn đề này ở mức mô hình nhưng nằm ngoài phạm vi của đề tài.
+
+\subsection{L4: kiểm tra nhất quán bằng chạy lại với tác vụ bị che}
+\paragraph{Ý tưởng (MELON).} MELON phát hiện tiêm lệnh bằng cách chạy lại với prompt người dùng bị thay bằng một prompt trung tính nhưng giữ nguyên kết quả công cụ; theo bài gốc, prompt trung tính yêu cầu tóm tắt nội dung và thực hiện các chỉ dẫn có trong đó. Nếu hành động của hai lần chạy giống nhau, hành vi không phụ thuộc vào tác vụ người dùng và tài liệu đang điều khiển mô hình. MELON so sánh các lời gọi công cụ bằng độ tương đồng giữa embedding với ngưỡng mặc định $0{,}8$, và tốn khoảng gấp đôi số lời gọi mô hình~\citep{zhu2025melon}.
+
+\paragraph{Cài đặt lại cho LLM đọc văn bản.} Trong đề tài không có lời gọi công cụ thật, nên điều được so sánh là \emph{phản hồi văn bản}. Với $y_1$ là phản hồi lần đầu, L4 gọi lại một lần với tác vụ bị che $s_t^{\mathrm{m}}$ trên cùng tài liệu: $y_2 = f(\sigma\,\Vert\,\sigma_+,\ s_t^{\mathrm{m}}\concat x^{(3)}\concat u_+;\ \omega)$, nhúng cả hai bằng \texttt{\embedid}~\citep{nussbaum2024nomic} thành $e_1=E(y_1)$, $e_2=E(y_2)$, và tính
+\begin{equation}\label{eq:l4}
+  \mathrm{sim}(y_1,y_2) = \frac{e_1^{\top}e_2}{\lVert e_1\rVert\,\lVert e_2\rVert},\qquad
+  a_4 = \begin{cases}\mathsf{block} & \text{nếu } \mathrm{sim}(y_1,y_2)\ge\tau,\\ \mathsf{pass} & \text{ngược lại.}\end{cases}
+\end{equation}
+Ngưỡng $\tau$ chỉ được chọn trên train và benign-tune. Chuỗi che $s_t^{\mathrm{m}}$ là một câu cố định, độc lập với tài liệu và với $s_t$; nội dung cụ thể: \FILL{chuỗi che theo mã}. \Cref{fig:l4} minh hoạ và \cref{alg:l4} cho thuật toán.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.98\linewidth}{!}{\input{figures/fig_l4}}
+\caption{Lần chạy che của L4. Hai lần chạy dùng cùng tài liệu; chỉ khác tác vụ. Nếu hai phản hồi giống nhau (độ giống cosine $\ge\tau$) thì phản hồi không phụ thuộc vào yêu cầu của người dùng, và hệ thống chặn.}\label{fig:l4}
+\end{figure}
+
+\begin{algorithm}[t]
+\caption{L4 --- chạy lại với tác vụ bị che}\label{alg:l4}
+\begin{algorithmic}[1]
+\Require $s_t$, tài liệu $x^{(3)}$, phản hồi lần đầu $y_1$, hàm \texttt{generate}, ngưỡng $\tau$, chuỗi che $s_t^{\mathrm{m}}$
+\Ensure $a_4\in\{\mathsf{pass},\mathsf{block}\}$, điểm $\mathrm{sim}$
+\State $y_2 \gets \mathrm{generate}(s_t^{\mathrm{m}},\ x^{(3)})$ \Comment{cùng cấu hình mô hình; ghi \texttt{n\_model\_calls}$\mathrel{+}=1$}
+\State $e_1,e_2 \gets E(y_1),\ E(y_2)$
+\State $\mathrm{sim} \gets \cos(e_1,e_2)$
+\If{$\mathrm{sim}\ge\tau$} \State \Return $(\mathsf{block},\mathrm{sim})$ \Else \State \Return $(\mathsf{pass},\mathrm{sim})$ \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Điểm yếu đã biết.} Thứ nhất, chính bài MELON ghi nhận phòng thủ này kém với tấn công đạt mục tiêu qua \emph{văn bản}: trong phân tích các trường hợp tấn công vẫn thành công của bài (66 trường hợp), nhóm ``response-based'' chiếm 72,73\%, vì MELON chỉ theo dõi lời gọi công cụ~\citep{zhu2025melon}. Phần lớn prompt của đề tài lại nhằm làm lộ canary \emph{trong câu trả lời}, tức đúng loại khó đối với ý tưởng này. Thứ hai, với tác vụ tóm tắt, chạy lại trên tài liệu \emph{sạch} cũng cho văn bản gần giống nhau vì cả hai lần đều xoay quanh nội dung của tài liệu; độ giống cosine giữa các embedding chủ yếu phản ánh chủ đề, nên có nguy cơ cao gắn cờ nhầm tài liệu lành tính. Thứ ba, tính cả embedding, L4 thêm một lần sinh và hai lần nhúng cho mỗi mẫu không bị chặn sớm, tức $\rho_N \approx 2$ ở các mẫu đi tới L4. Nhóm do đó coi L4 như một thí nghiệm: nếu so độ giống văn bản không tách được hai nhóm trên train và benign-tune thì báo cáo là \emph{kết quả âm} cùng phân tích nguyên nhân, không cố điều chỉnh để ``có kết quả đẹp''.
+
+\subsection{Giao thức đánh giá chống rò rỉ hold-out}\label{sec:protocol}
+Mọi thiết kế phòng thủ đều có nguy cơ vô tình quá khớp với dữ liệu dùng để thiết kế. Giao thức sau chặn nguy cơ đó:
+\begin{enumerate}[label=\textbf{G\arabic*.}]
+  \item \textbf{Chia tập}. Prompt tấn công chia thành \emph{train} (để thiết kế), \emph{hold-out} (kỹ thuật không xuất hiện trong train) và \emph{test\_indist} (kỹ thuật như train, câu chữ mới); tập benign chia thành phần chỉnh (\emph{tune}) và phần kiểm (\emph{test}).
+  \item \textbf{Chỉnh tham số}. Ngưỡng, từ khoá, prompt hệ thống, chọn biến thể chỉ dựa trên train và benign-tune.
+  \item \textbf{Đóng băng}. Sau khi cố định cấu hình cuối, mã và dữ liệu được đóng băng bằng thẻ phiên bản (\code{v1.0}); hold-out chỉ chạy một lần cho cấu hình cuối. Harness từ chối chạy split hold-out nếu thiếu cờ xác nhận.
+  \item \textbf{Không dùng đáp án}. Các lớp không đọc \code{success\_check} hay nhãn \code{label}; canary sinh ngẫu nhiên mỗi lần chạy, không ghi giá trị cố định trong tệp prompt.
+  \item \textbf{Tái lập}. Mọi bảng và hình sinh bằng script từ \code{results.csv}; không sửa tay tệp kết quả. Mỗi lần chạy lưu \code{run\_config.json} (mô hình, nhiệt độ, số lần lấy mẫu, hạt giống, mã băm commit, ngày chạy).
+\end{enumerate}
+Giao thức giảm nhưng không loại hết rủi ro: người viết prompt hold-out và train có thể trùng phong cách, và người thiết kế phòng thủ biết các \emph{họ} kỹ thuật dù chưa thấy hold-out. Những điều này được nêu ở \cref{sec:limits}.

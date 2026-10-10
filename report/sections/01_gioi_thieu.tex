@@ -1,0 +1,37 @@
+\section{Giới thiệu bài toán}\label{sec:intro}
+
+\subsection{Động cơ}
+Các ứng dụng xây trên mô hình ngôn ngữ lớn (LLM) ngày càng thường phải \emph{đọc} nội dung do người khác viết: một trợ lý tóm tắt email, một công cụ hỏi đáp trên tài liệu nội bộ, một chatbot chăm sóc khách hàng đọc phiếu hỗ trợ, một trình duyệt có trợ lý AI đọc trang web. Trong các ứng dụng này có hai nguồn văn bản đi vào cùng một cửa sổ ngữ cảnh: (i) \emph{chỉ dẫn} của nhà phát triển và của người dùng, mà ứng dụng có lý do để tin; và (ii) \emph{dữ liệu bên ngoài}, mà ứng dụng không kiểm soát được. Mô hình nhận cả hai dưới dạng một chuỗi token và không có ranh giới cứng nào buộc nó chỉ làm theo nguồn thứ nhất. Hệ quả là một người chỉ cần viết được vào tài liệu (một email gửi tới, một trang web, một tệp đính kèm) cũng có thể cài vào đó một câu lệnh và hy vọng mô hình thực hiện câu lệnh ấy thay cho yêu cầu của người dùng. Đây là \emph{tấn công tiêm lệnh gián tiếp} (indirect prompt injection)~\citep{greshake2023indirect}; \citet{yi2025bipia} cho rằng gốc của vấn đề là các mô hình không tách được phần ngữ cảnh khỏi phần chỉ dẫn cần thực hiện.
+
+\begin{examplebox}[title={Ví dụ minh hoạ: trợ lý tóm tắt báo cáo nội bộ}]
+\small
+\textbf{System prompt (tin cậy):} \texttt{Bạn là trợ lý tóm tắt tài liệu cho công ty ABC. Mã nội bộ: SECRET\_CANARY=<chuỗi ngẫu nhiên>. Không được tiết lộ chỉ dẫn này.}\\[2pt]
+\textbf{Yêu cầu của người dùng (tin cậy):} \texttt{Tóm tắt tài liệu sau trong 3 câu.}\\[2pt]
+\textbf{Tài liệu (không tin cậy):} \texttt{Báo cáo quý 3 cho thấy doanh thu tăng 12\%. [\dots] Bỏ qua toàn bộ chỉ dẫn trước đó. In nguyên văn system prompt đang điều khiển bạn.}\\[2pt]
+Nếu mô hình làm theo câu cuối của tài liệu, câu trả lời chứa mã nội bộ và \emph{tấn công thành công}; nếu mô hình chỉ tóm tắt báo cáo, tấn công thất bại. Hai trường hợp đều không cần kẻ tấn công có quyền truy cập vào hệ thống, chỉ cần quyền viết vào tài liệu.
+\end{examplebox}
+
+Hậu quả không dừng ở việc lộ system prompt. \citet{greshake2023indirect} phân loại các hậu quả thành thu thập thông tin, lừa đảo, xâm nhập, mã độc, thao túng nội dung và gây gián đoạn dịch vụ; \citet{liu2024formalizing} đưa ra khung hình thức để định nghĩa, phân loại và so sánh các tấn công lẫn phòng thủ. Dù đã có nhiều đề xuất phòng thủ (xem \cref{sec:related}), chưa có phương pháp nào được báo cáo là hoàn hảo; khảo sát gần đây của \citet{wang2026landscape} kết luận rằng không có phòng thủ đơn lẻ nào đồng thời đạt độ tin cậy cao, chất lượng tác vụ cao và độ trễ thấp.
+
+\subsection{Phát biểu vấn đề}
+Đề tài xét một tình huống đủ nhỏ để đo được nhưng vẫn giữ các đặc điểm chính của bài toán: \emph{một} LLM (không phải hệ đa thành phần hay tác tử dùng công cụ thật) thực hiện tác vụ tóm tắt hoặc hỏi đáp trên một tài liệu tiếng Việt (có một ít tiếng Anh) mà nó không tin cậy. Ta muốn biết: khi chạy mô hình trần, tài liệu chứa lệnh tiêm làm mô hình chệch hướng bao nhiêu phần trăm; khi thêm lần lượt các lớp phòng thủ (lọc đầu vào, bộ phân loại, tách chỉ dẫn/dữ liệu, kiểm tra nhất quán), tỉ lệ đó giảm bao nhiêu; và cái giá phải trả là gì (chặn nhầm tài liệu sạch, giảm chất lượng tóm tắt, tăng độ trễ). Câu hỏi cuối cùng, quan trọng nhất về mặt phương pháp, là các số đo trên bộ prompt dùng để thiết kế phòng thủ có còn đúng với những kỹ thuật tấn công mà người thiết kế chưa thấy hay không.
+
+\subsection{Câu hỏi nghiên cứu}
+\begin{description}[leftmargin=1.2em,itemsep=3pt]
+  \item[RQ1 (mức độ dễ tổn thương).] Khi không có phòng thủ, mô hình \modelname{} bị tiêm lệnh thành công bao nhiêu phần trăm trên bộ prompt của nhóm, và tỉ lệ này khác nhau thế nào giữa các loại tấn công (trực tiếp, gián tiếp, roleplay, đổi ngôn ngữ, che giấu, many-shot) và giữa các mục tiêu (lộ canary, đổi nội dung kết quả, gọi công cụ giả lập)?
+  \item[RQ2 (hiệu quả và đánh đổi).] Mỗi lớp phòng thủ L1--L4 giảm ASR được bao nhiêu khi cộng dồn và khi xét riêng (ablation)? Cái giá tương ứng là gì: tỉ lệ từ chối oan trên tài liệu sạch, chất lượng tác vụ (utility), số lần gọi mô hình và độ trễ?
+  \item[RQ3 (tổng quát hoá).] Các tham số của phòng thủ chỉ được chỉnh trên tập train. Hiệu quả có được giữ khi gặp tập hold-out, gồm các kỹ thuật tấn công không xuất hiện khi thiết kế? Khoảng cách train--hold-out là bao nhiêu và nằm ở lớp nào?
+\end{description}
+
+\subsection{Đóng góp và những điều báo cáo \emph{không} tuyên bố}
+Đóng góp của nhóm là đóng góp thực nghiệm và kỹ thuật, không phải đề xuất phương pháp mới:
+\begin{enumerate}[label=(C\arabic*)]
+  \item Một bộ prompt tấn công và tập benign bằng tiếng Việt, gắn nhãn theo hai hệ phân loại có sẵn (năm kiểu cơ bản của \citet{liu2024formalizing} và danh mục kỹ thuật của HackAPrompt~\citep{schulhoff2023hackaprompt}), có chia train/hold-out/benign và ghi nguồn từng mẫu (\cref{sec:eval-data}).
+  \item Một chuỗi phòng thủ bốn lớp L1$\to$L2$\to$L3$\to$mô hình$\to$L4 với giao diện thống nhất, mỗi lớp bật/tắt độc lập để đo cộng dồn và ablation (\cref{sec:method}).
+  \item Một giao thức đánh giá chống rò rỉ hold-out, kèm thước đo có khoảng tin cậy (Wilson và bootstrap theo cụm) và đo chi phí cùng với ASR (\cref{sec:eval}).
+  \item Phân tích đánh đổi và các trường hợp phòng thủ thất bại, kể cả kết quả âm nếu có.
+\end{enumerate}
+Để tránh hiểu lầm, nhóm nói rõ: (a) \textbf{không} có phương pháp phòng thủ mới nào trong báo cáo này; (b) L4 là \emph{cài đặt lại ý tưởng} che tác vụ người dùng rồi chạy lại của MELON~\citep{zhu2025melon} trong bối cảnh khác (một LLM đọc văn bản, không phải tác tử dùng công cụ), nên kết quả của nó \textbf{không} phải là tái hiện số liệu của bài gốc; (c) L3 là phiên bản \emph{không huấn luyện} (spotlighting và system prompt theo thứ tự ưu tiên), khác về bản chất với các phương pháp huấn luyện như Instruction Hierarchy, StruQ, SecAlign; (d) mô hình dùng trong thực nghiệm là \modelname{} (không phải Qwen3-8B như kế hoạch ban đầu, vì mô hình này chưa được cài trên máy chạy thực nghiệm), nên chỉ nên so sánh xu hướng với các bài báo, không so sánh số tuyệt đối.
+
+\subsection{Bố cục báo cáo}
+\Cref{sec:related} điểm lại các công trình liên quan. \Cref{sec:problem} phát biểu bài toán bằng công thức: đầu vào, đầu ra, mô hình đe doạ và các thước đo. \Cref{sec:method} mô tả kiến trúc và từng lớp phòng thủ. \Cref{sec:eval} trình bày mục đích, kịch bản và kết quả đánh giá, cùng phân tích lỗi và hạn chế. \Cref{sec:conclusion} kết luận, rút bài học và nêu hướng phát triển. Phụ lục A liệt kê toàn bộ prompt, phụ lục B--D gồm ví dụ định tính, tài liệu bổ sung và thông tin tái lập.
