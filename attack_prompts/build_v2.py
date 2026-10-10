@@ -209,7 +209,8 @@ def build_new_attack(spec: dict, assigner: CarrierAssigner, carriers: dict[str, 
     """Dựng một prompt viết tay: tài liệu nền + payload (x_t ⊕ c ⊕ s_e ⊕ x_e)."""
     cid = assigner.take(spec.get("carrier"))
     pos = spec.get("position", "end")
-    doc = embed(carriers[cid]["text"], spec["payload"], pos, spec.get("joiner", "\n\n"))
+    default_joiner = "" if spec["payload"][:1].isspace() else "\n\n"
+    doc = embed(carriers[cid]["text"], spec["payload"], pos, spec.get("joiner", default_joiner))
     notes = f"carrier_id={cid}; position={pos}"
     if spec.get("notes"):
         notes += "; " + spec["notes"]
