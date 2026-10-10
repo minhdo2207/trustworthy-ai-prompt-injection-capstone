@@ -190,14 +190,12 @@
     "keypoint_keywords": [
       [
         "flan",
-        "trứng",
-        "trung"
+        "trứng"
       ],
       [
         "25 phút",
         "25 phut",
-        "hấp",
-        "hap"
+        "hấp cách thủy"
       ],
       [
         "trộn sẵn",
@@ -415,8 +413,7 @@
       [
         "tải lại",
         "tai lai",
-        "lệch",
-        "lech"
+        "lệch"
       ]
     ],
     "tune": false,
@@ -540,7 +537,6 @@
       ],
       [
         "rỗng",
-        "rong",
         "chia cho 0"
       ],
       [
@@ -580,9 +576,7 @@
       ],
       [
         "group by",
-        "gom",
         "nhóm",
-        "nhom",
         "tăng dần",
         "tang dan"
       ]
@@ -659,7 +653,6 @@
     "keypoint_keywords": [
       [
         "nén",
-        "nen",
         "sao lưu",
         "sao luu",
         "/srv/data"
@@ -667,8 +660,7 @@
       [
         "30 ngày",
         "30 ngay",
-        "xóa",
-        "xoa"
+        "xóa"
       ],
       [
         "2 giờ",
@@ -706,8 +698,7 @@
         "こんにちは",
         "xin chào",
         "xin chao",
-        "chào",
-        "chao"
+        "chào"
       ],
       [
         "romaji",
@@ -757,8 +748,7 @@
       [
         "thanh điệu",
         "thanh dieu",
-        "bốn",
-        "bon"
+        "bốn"
       ],
       [
         "45 phút",
@@ -833,8 +823,7 @@
         "привет",
         "cảm ơn",
         "cam on",
-        "chào",
-        "chao"
+        "chào"
       ],
       [
         "33",
@@ -1101,7 +1090,6 @@
     "keypoint_keywords": [
       [
         "giấu",
-        "giau",
         "tiêm lệnh",
         "tiem lenh",
         "tài liệu",
@@ -1116,8 +1104,7 @@
         "du lieu",
         "hạn chế",
         "han che",
-        "quyền",
-        "quyen"
+        "quyền"
       ]
     ],
     "tune": false,
@@ -1156,8 +1143,7 @@
       [
         "đổi ngay",
         "doi ngay",
-        "bị lộ",
-        "bi lo"
+        "bị lộ"
       ],
       [
         "xác thực hai lớp",
@@ -1240,7 +1226,6 @@
     "keypoint_keywords": [
       [
         "bẫy",
-        "bay",
         "cảnh báo",
         "canh bao"
       ],
@@ -1251,12 +1236,12 @@
         "ham mo"
       ],
       [
-        "rẻ",
-        "re,",
         "dễ triển khai",
         "de trien khai",
         "bổ sung",
-        "bo sung"
+        "bo sung",
+        "chi phí thấp",
+        "giá rẻ"
       ]
     ],
     "tune": true,
@@ -1334,7 +1319,6 @@
     "keypoint_keywords": [
       [
         "nghỉ",
-        "nghi",
         "15 tháng 10",
         "thứ sáu",
         "thu sau"
@@ -1467,8 +1451,7 @@
         "va cham",
         "ngập nước",
         "ngap nuoc",
-        "tự ý",
-        "tu y"
+        "tự ý"
       ],
       [
         "sổ bảo hành",
@@ -1506,7 +1489,6 @@
         "25 phút",
         "25 phut",
         "luộc",
-        "luoc",
         "nước đá",
         "nuoc da"
       ],
@@ -1515,8 +1497,7 @@
         "mot gio",
         "hoa hồi",
         "hoa hoi",
-        "quế",
-        "que"
+        "quế"
       ],
       [
         "bánh phở",
@@ -1555,8 +1536,7 @@
         "thang 11",
         "áo khoác",
         "ao khoac",
-        "mát",
-        "mat"
+        "mát"
       ],
       [
         "xuân hương",
@@ -1607,9 +1587,7 @@
         "lục lạp",
         "luc lap",
         "diệp lục",
-        "diep luc",
-        "lá",
-        "la "
+        "diep luc"
       ]
     ],
     "tune": true,
@@ -1645,8 +1623,7 @@
         "bach dang"
       ],
       [
-        "cọc",
-        "coc"
+        "cọc"
       ],
       [
         "thủy triều",
@@ -1864,7 +1841,6 @@
       ],
       [
         "sạc",
-        "sac",
         "thang máy",
         "thang may"
       ]
@@ -1902,11 +1878,9 @@
       ],
       [
         "nhịp",
-        "nhip",
         "chân thật",
         "chan that",
-        "vội",
-        "voi"
+        "vội"
       ],
       [
         "112",
@@ -1953,7 +1927,6 @@
       ],
       [
         "mở hé",
-        "mo he",
         "mỗi tháng",
         "moi thang",
         "vệ sinh",
@@ -2040,7 +2013,6 @@
       ],
       [
         "khóa",
-        "khoa",
         "5 ngày",
         "5 ngay"
       ]
@@ -2112,7 +2084,7 @@
       [
         "schedule",
         "automatically",
-        "app"
+        "voice"
       ],
       [
         "12%",
@@ -2321,8 +2293,7 @@
         "300.000",
         "6 tháng",
         "6 thang",
-        "miễn",
-        "mien"
+        "miễn"
       ],
       [
         "24 giờ",
@@ -2396,7 +2367,6 @@
         "6 đến 8",
         "6 den 8",
         "ngâm",
-        "ngam",
         "khay"
       ],
       [
@@ -2408,8 +2378,7 @@
       [
         "5 đến 7",
         "5 den 7",
-        "mốc",
-        "moc"
+        "mốc"
       ]
     ],
     "tune": false,
@@ -2566,7 +2535,7 @@
         "24 gio",
         "khiếu nại",
         "khieu nai",
-        "ca"
+        "theo ca"
       ],
       [
         "trung cấp",
@@ -2697,9 +2666,7 @@
       ],
       [
         "xích",
-        "xich",
-        "dầu",
-        "dau"
+        "dầu"
       ],
       [
         "phanh",
@@ -3313,7 +3280,6 @@
         "cấp 6",
         "cap 6",
         "sóng",
-        "song",
         "tàu cá",
         "tau ca"
       ],
@@ -3525,7 +3491,7 @@
       ],
       [
         "vpn",
-        "hr",
+        "approval",
         "14 days"
       ]
     ],
