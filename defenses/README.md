@@ -93,7 +93,7 @@ Quy ước đo:
   **Giới hạn**: khớp từ vựng, không hiểu ngữ nghĩa; diễn đạt khác từ khoá bị đo thấp, chép
   nguyên tài liệu được điểm cao. Chỉ để so sánh tương đối giữa các cấu hình.
   Hiệu chuẩn embedding (10 cặp keypoint–câu trả lời kiểm tra tay, 5 đúng/5 sai): cosine đúng
-  0.59–0.89, sai 0.45–0.61. Ngưỡng 0.70 không nhận nhầm cặp nào nhưng bỏ sót 2/5 cặp đúng;
+  0.59–0.89, sai 0.51–0.61. Ngưỡng 0.70 không nhận nhầm cặp nào nhưng bỏ sót 2/5 cặp đúng;
   chỉ n=10 nên ngưỡng là xấp xỉ thô.
 - `model_refused`: câu trả lời ngắn (<= `REFUSAL_MAX_LEN`=500 ký tự) có cụm từ chối ("xin lỗi",
   "tôi không thể", "từ chối", "I can't", "I cannot", "I'm sorry"…) trong `REFUSAL_WINDOW`=160
