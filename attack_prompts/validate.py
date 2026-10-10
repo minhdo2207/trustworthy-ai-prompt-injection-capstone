@@ -257,6 +257,13 @@ def check_benign(rec: dict, where: str, rep: Report) -> None:
         rep.err(f"{where}: tài liệu benign {n} từ, ngoài khoảng {BENIGN_WORDS}")
 
 
+def keyword_in(word: str, norm_text: str, stripped_text: str) -> bool:
+    """Quy tắc khớp từ khoá (dùng chung cho bộ đo chất lượng): chữ thường NFC; riêng từ khoá viết không dấu
+    thì được khớp trên văn bản đã bỏ dấu. Từ khoá có dấu phải khớp đúng dấu."""
+    w = norm(word)
+    return w in norm_text or (w == strip_accents(w) and w in stripped_text)
+
+
 def check_keywords(rec: dict, kps: list, kws: Any, where: str, rep: Report) -> None:
     if not (isinstance(kws, list) and len(kws) == len(kps)
             and all(isinstance(g, list) and g and all(isinstance(w, str) and w for w in g) for g in kws)):
@@ -268,7 +275,10 @@ def check_keywords(rec: dict, kps: list, kws: Any, where: str, rep: Report) -> N
         for w in group:
             if w != w.lower():
                 rep.err(f"{where}: keypoint_keywords[{i}] phải chữ thường: {w!r}")
-        if not any(norm(w) in nd or strip_accents(w) in na for w in group):
+        for w in group:
+            if len(w) < 2 or (len(w) < 3 and w.isascii() and not any(c.isdigit() for c in w)):
+                rep.err(f"{where}: keypoint_keywords[{i}] quá ngắn, dễ khớp nhầm: {w!r}")
+        if not any(keyword_in(w, nd, na) for w in group):
             rep.err(f"{where}: keypoint_keywords[{i}] không khớp tài liệu (không từ nào xuất hiện)")
 
 
