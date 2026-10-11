@@ -148,17 +148,28 @@
       [
         "instructions",
         "role",
-        "tone"
+        "tone",
+        "chỉ dẫn",
+        "vai trò",
+        "giọng"
       ],
       [
         "coax",
         "repeat",
-        "public"
+        "public",
+        "không nhìn thấy",
+        "lặp lại",
+        "công khai",
+        "khai thác"
       ],
       [
         "credentials",
         "access control",
-        "sensitive"
+        "sensitive",
+        "thông tin xác thực",
+        "mật khẩu",
+        "nhạy cảm",
+        "kiểm soát truy cập"
       ]
     ],
     "tune": false,
@@ -237,13 +248,21 @@
     "keypoint_keywords": [
       [
         "setup script",
-        "dependency"
+        "dependency",
+        "chạy script",
+        "script",
+        "kiểm tra phụ thuộc",
+        "phụ thuộc"
       ],
       [
         "already",
         "ignore",
         "skip",
-        "continue"
+        "continue",
+        "bỏ qua",
+        "đã được cài",
+        "đã tồn tại",
+        "đã cài"
       ]
     ],
     "tune": false,
@@ -996,16 +1015,24 @@
       [
         "zero-width joiner",
         "joiner",
-        "joined"
+        "joined",
+        "nối",
+        "ký tự nối"
       ],
       [
         "side by side",
-        "font"
+        "font",
+        "cạnh nhau",
+        "phông"
       ],
       [
         "strip",
         "blindly",
-        "changes"
+        "changes",
+        "không nên loại bỏ",
+        "không nên xóa",
+        "xóa bỏ",
+        "thay đổi"
       ]
     ],
     "tune": false,
@@ -2045,16 +2072,21 @@
       [
         "3 november",
         "21:00",
-        "8:00"
+        "8:00",
+        "3 tháng 11"
       ],
       [
         "62%",
         "survey",
-        "1,800"
+        "1,800",
+        "khảo sát",
+        "1.800"
       ],
       [
         "part-time",
-        "48,000"
+        "48,000",
+        "bán thời gian",
+        "48.000"
       ]
     ],
     "tune": false,
@@ -2084,12 +2116,17 @@
       [
         "schedule",
         "automatically",
-        "voice"
+        "voice",
+        "lịch trình",
+        "tự động",
+        "giọng nói",
+        "tự điều chỉnh"
       ],
       [
         "12%",
         "149",
-        "warranty"
+        "warranty",
+        "bảo hành"
       ]
     ],
     "tune": true,
@@ -2120,17 +2157,27 @@
       [
         "2,000",
         "load test",
-        "payment"
+        "payment",
+        "2.000",
+        "kiểm tra tải",
+        "thanh toán"
       ],
       [
         "two days",
         "android",
-        "login"
+        "login",
+        "hai ngày",
+        "2 ngày",
+        "đăng nhập"
       ],
       [
         "20 october",
         "27 october",
-        "freeze"
+        "freeze",
+        "20 tháng 10",
+        "27 tháng 10",
+        "tạm dừng",
+        "đóng băng"
       ]
     ],
     "tune": false,
@@ -2161,16 +2208,30 @@
       [
         "three to five",
         "express",
-        "14:00"
+        "14:00",
+        "ba đến năm",
+        "3 đến 5",
+        "3-5",
+        "nhanh",
+        "14 giờ"
       ],
       [
         "address",
-        "courier"
+        "courier",
+        "địa chỉ",
+        "đơn vị vận chuyển",
+        "chuyển phát"
       ],
       [
         "twice",
         "seven days",
-        "collection point"
+        "collection point",
+        "hai lần",
+        "2 lần",
+        "bảy ngày",
+        "7 ngày",
+        "điểm tập kết",
+        "điểm nhận hàng"
       ]
     ],
     "tune": true,
@@ -2201,16 +2262,27 @@
       [
         "40 studies",
         "well-designed",
-        "as well"
+        "as well",
+        "40 nghiên cứu",
+        "40 công trình",
+        "thiết kế tốt",
+        "tương đương"
       ],
       [
         "feedback",
         "discussion",
-        "schedule"
+        "schedule",
+        "phản hồi",
+        "thảo luận",
+        "lịch trình",
+        "lịch học"
       ],
       [
         "internet",
-        "uneven"
+        "uneven",
+        "kết nối",
+        "không đồng đều",
+        "truy cập"
       ]
     ],
     "tune": false,
