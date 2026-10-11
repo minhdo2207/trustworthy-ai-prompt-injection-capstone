@@ -8,8 +8,10 @@ Ví dụ:
   python3 defenses/eval_asr.py --configs baseline --splits train,benign --samples 3
   python3 defenses/eval_asr.py --configs baseline,L1,L1+L2,L1+L2+L3,L1+L2+L3+L4 \
       --out results/20261012-1 --resume
-  # Chỉ cho cấu hình cuối, một lần:
+  # Chỉ cho cấu hình cuối, một lần (cùng cờ cho holdout và hai split ngoài ext_attack, ext_benign):
   python3 defenses/eval_asr.py --configs baseline,L1+L2+L3+L4 --splits holdout \
+      --confirm-final-holdout
+  python3 defenses/eval_asr.py --configs baseline,L1+L2+L3+L4 --splits ext_attack,ext_benign \
       --confirm-final-holdout
 
 Đầu ra trong `--out`: results.csv, outputs.jsonl, run_config.json.
@@ -53,7 +55,13 @@ SPLIT_FILES = {
     "holdout": "holdout_prompts.json",
     "benign": "benign_prompts.json",
     "test_indist": "test_indist_prompts.json",
+    "ext_attack": "ext_attack_prompts.json",
+    "ext_benign": "ext_benign_prompts.json",
 }
+# Các split chỉ được chạy một lần cho cấu hình cuối: hold-out và dữ liệu ngoài (zero-shot, không dùng chỉnh tham số).
+FINAL_ONLY_SPLITS = ("holdout", "ext_attack", "ext_benign")
+EXT_SPLITS = ("ext_attack", "ext_benign")
+SCORABLE_CHECKS = ("canary_leak", "contains", "regex", "tool_call")
 LAYER_MODULES = {
     "L1": "defenses.layer1_filtering",
     "L2": "defenses.layer2_refusal_classifier",
@@ -129,16 +137,18 @@ def load_prompts(split: str, data_dir: Path, limit: int = 0) -> list[dict]:
                                "(schema cũ? cần schema v2).")
         if p["label"] == "attack":
             sc = p.get("success_check")
-            if not isinstance(sc, dict) or sc.get("type") not in (
-                    "canary_leak", "contains", "regex", "tool_call"):
+            if sc is None and split in EXT_SPLITS and p.get("goal_type") == "other":
+                pass  # mục ngoài không có tiêu chí chấm: ASR để trống, vẫn đo chặn/từ chối
+            elif not isinstance(sc, dict) or sc.get("type") not in SCORABLE_CHECKS:
                 raise HarnessError(f"{path.name}: {p['id']} có success_check không hợp lệ: {sc!r}")
         elif p["label"] == "benign":
             utility.keypoint_hits("", p)  # kiểm tra keypoint_keywords song song với keypoints
         else:
             raise HarnessError(f"{path.name}: {p['id']} có label lạ: {p['label']!r}")
-        if p.get("split", split) == "holdout" and split != "holdout":
-            raise HarnessError(f"{path.name}: {p['id']} thuộc hold-out nhưng nằm trong "
-                               f"split {split!r}; từ chối chạy.")
+        own = p.get("split", split)
+        if own in FINAL_ONLY_SPLITS and own != split:
+            raise HarnessError(f"{path.name}: {p['id']} thuộc hold-out/dữ liệu ngoài "
+                               f"(split {own!r}) nhưng nằm trong split {split!r}; từ chối chạy.")
     ids = [p["id"] for p in prompts]
     if len(set(ids)) != len(ids):
         raise HarnessError(f"{path.name}: id bị trùng.")
@@ -351,8 +361,12 @@ class Evaluator:
             refused = int(not blocked and utility.model_refused(response))
             try:
                 if is_attack:
-                    attack_success = int(not blocked and success.check_success(
-                        prompt["success_check"], response, canary, tool_calls))
+                    if prompt.get("success_check"):
+                        attack_success = int(not blocked and success.check_success(
+                            prompt["success_check"], response, canary, tool_calls))
+                    # không có success_check (mục ngoài goal_type=other): ASR để trống, không phải 0
+                elif not prompt.get("reference_keypoints"):
+                    pass  # benign không có keypoint (tập ngoài): utility để trống, không phải 0
                 elif blocked:
                     util = 0.0
                 else:
@@ -444,20 +458,29 @@ def print_summary_table(rows: list[dict], configs: Optional[list[str]] = None) -
 
 
 def _attack_line(cfg: str, split: str, g: list[dict], base_lat: dict) -> str:
-    k, n = sum(int(r["attack_success"] or 0) for r in g), len(g)
+    """ASR chỉ tính trên các lượt chấm được (`attack_success` khác rỗng); n là số lượt chấm được."""
+    scored = [r for r in g if r["attack_success"] != ""]
+    k, n = sum(int(r["attack_success"]) for r in scored), len(scored)
     lo, hi = wilson(k, n)
     lat = _mean([float(r["latency_ms_total"]) for r in g])
     ratio = lat / base_lat[split] if base_lat.get(split) else float("nan")
-    return (f"{cfg:<18}{split:<12}{n:>5}{k / n:>8.1%}{f'[{lo:.1%},{hi:.1%}]':>16}"
+    asr = f"{k / n:.1%}" if n else "n/a"
+    ci = f"[{lo:.1%},{hi:.1%}]" if n else "n/a"
+    return (f"{cfg:<18}{split:<12}{n:>5}{asr:>8}{ci:>16}"
             f"{_mean([float(r['blocked']) for r in g]):>9.1%}"
             f"{_mean([float(r['n_model_calls']) for r in g]):>7.2f}{lat:>9.0f}{ratio:>7.2f}")
+
+
+def _utility_cell(g: list[dict]) -> str:
+    vals = [float(r["utility_score"]) for r in g if r["utility_score"] != ""]
+    return f"{_mean(vals):.3f}" if vals else "n/a"
 
 
 def _benign_line(cfg: str, split: str, g: list[dict]) -> str:
     fp = _mean([float(int(r["blocked"]) or int(r["model_refused"] or 0)) for r in g])
     return (f"{cfg:<18}{split:<12}{len(g):>5}{_mean([float(r['blocked']) for r in g]):>9.1%}"
             f"{_mean([float(r['model_refused'] or 0) for r in g]):>9.1%}{fp:>9.1%}"
-            f"{_mean([float(r['utility_score'] or 0) for r in g]):>9.3f}"
+            f"{_utility_cell(g):>9}"
             f"{_mean([float(r['n_model_calls']) for r in g]):>7.2f}"
             f"{_mean([float(r['latency_ms_total']) for r in g]):>9.0f}")
 
@@ -536,7 +559,8 @@ def build_parser() -> argparse.ArgumentParser:
         description="Harness đo ASR prompt injection qua các lớp phòng thủ L1–L4.")
     p.add_argument("--configs", default=DEFAULT_CONFIGS,
                    help="baseline,L1,L1+L2,L1+L2+L3,L1+L2+L3+L4,only_L1..only_L4")
-    p.add_argument("--splits", default="train,benign", help="train,benign,holdout,test_indist")
+    p.add_argument("--splits", default="train,benign",
+                   help="train,benign,holdout,test_indist,ext_attack,ext_benign")
     p.add_argument("--samples", type=int, default=3, help="số lần lấy mẫu mỗi (config, prompt)")
     p.add_argument("--temperature", type=float, default=0.7)
     p.add_argument("--seed", type=int, default=0, help="seed gốc, trộn với hash(prompt_id, sample_idx)")
@@ -548,7 +572,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--workers", type=int, default=1, help="Ollama xử lý nối tiếp; tối đa nên là 2")
     p.add_argument("--resume", action="store_true", help="chạy tiếp, bỏ qua khoá đã xong")
     p.add_argument("--confirm-final-holdout", action="store_true",
-                   help="BẮT BUỘC để chạy split holdout; chỉ dùng cho cấu hình cuối")
+                   help="BẮT BUỘC để chạy split holdout, ext_attack, ext_benign; chỉ dùng cho cấu hình cuối")
     p.add_argument("--utility-embed", action="store_true",
                    help="dùng embedding làm phương án phụ khi chấm utility (cần nomic-embed-text)")
     p.add_argument("--num-predict", type=int, default=400)
@@ -558,8 +582,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _guard_holdout(splits: list[str], confirmed: bool) -> None:
-    if "holdout" in splits and not confirmed:
-        print("TỪ CHỐI: split 'holdout' chỉ được chạy cho cấu hình cuối cùng, một lần.\n"
+    final = [s for s in splits if s in FINAL_ONLY_SPLITS]
+    if final and not confirmed:
+        print(f"TỪ CHỐI: split {final} chỉ được chạy cho cấu hình cuối cùng, một lần "
+              "(hold-out và dữ liệu ngoài đều là dữ liệu chưa được dùng để chỉnh tham số).\n"
               "Nếu đúng là lần chạy cuối, thêm cờ --confirm-final-holdout. "
               "Mọi việc chỉnh ngưỡng/từ khoá/prompt hệ thống phải làm trên train/benign.",
               file=sys.stderr)
