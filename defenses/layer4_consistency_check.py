@@ -58,11 +58,13 @@ EMBED_MAX_CHARS = 2000
 
 # Cấu hình giao theo kết quả dev (defenses/README.md, mục L4). Đây là cấu hình "ít tệ nhất" chứ
 # không phải bộ phát hiện đã chứng minh hiệu quả: xem cảnh báo ở docstring đầu file.
-# THRESHOLD = ngưỡng ở FPR dev <= 10% trên 60 benign dev.
-# Hiệu chỉnh lại trên qwen3:8b (model dùng cho lần chạy cuối): 0,937 (TPR dev 7/30 tấn công, 2/4 ca lộ canary).
-# Giá trị cũ 0,74 chọn trên qwen2.5:7b chặn nhầm 100% benign khi chạy qwen3:8b (ngưỡng không chuyển giữa các model).
+# THRESHOLD: ngưỡng sao cho FPR <= 10% trên benign `tune` (tiêu chí khai báo từ đầu), chọn trong BỐI CẢNH CHUỖI
+# L1+L2+L3+L4 trên qwen3:8b (42 benign tune, 1 lượt mỗi câu; `results/dev_tuning/l4_chain_calibration.json`):
+# 0,9463 -> FPR tune 4/42 (9,5%), FPR phần benign còn lại 5/40 (12,5%).
+# Lịch sử: 0,74 (qwen2.5:7b) chặn 100% benign trên qwen3:8b; 0,937 (qwen3:8b, chưa có L3, 60 benign dev) cho FPR 21%
+# khi có L3 vì L3 đổi phân phối câu trả lời; ngưỡng không chuyển giữa model hay giữa bối cảnh ghép lớp.
 DETECTOR = "melon_cosine"
-THRESHOLD = 0.937
+THRESHOLD = 0.9463
 
 
 # ---------------------------------------------------------------------------
