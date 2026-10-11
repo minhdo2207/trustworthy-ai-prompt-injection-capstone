@@ -1,0 +1,138 @@
+\section{Phát biểu bài toán}\label{sec:problem}
+
+Mục này định nghĩa bài toán bằng ký hiệu; \cref{tab:notation} liệt kê các ký hiệu. Phần hình thức hoá tấn công theo \citet{liu2024formalizing}; phần phòng thủ như một hợp thành các lớp và phần thước đo là cách trình bày của nhóm.
+
+\subsection{Tác vụ đích và dữ liệu bị nhiễm}
+Ứng dụng có một \emph{tác vụ đích}, gồm chỉ dẫn tin cậy $s_t$ (ví dụ ``Tóm tắt tài liệu sau trong 3 câu'') và dữ liệu đích $x_t$ (tài liệu sạch). Mô hình ngôn ngữ $f$ nhận system prompt $\sigma$ và một thông điệp người dùng, và sinh phản hồi
+\begin{equation}
+  y = f\bigl(\sigma,\; s_t \concat x_t;\ \omega\bigr),
+\end{equation}
+trong đó $\concat$ là phép nối chuỗi (có chèn dấu phân cách theo mẫu của ứng dụng) và $\omega$ gồm nhiệt độ và hạt giống lấy mẫu. System prompt $\sigma = \sigma_0 \,\Vert\, \texttt{SECRET\_CANARY=}k$ chứa một \emph{canary} $k$ sinh ngẫu nhiên cho mỗi lần chạy; canary đóng vai trò thông tin cần giữ bí mật.
+
+Kẻ tấn công không đổi $s_t$ hay $\sigma$ mà chỉ thay $x_t$ bằng \emph{dữ liệu bị nhiễm}
+\begin{equation}
+  \tilde{x} = \mathcal{A}\bigl(x_t,\, s_e,\, x_e\bigr),
+\end{equation}
+với $s_e$ là chỉ dẫn tiêm vào và $x_e$ là dữ liệu tiêm vào, và $\mathcal{A}$ là chiến lược tấn công. Năm kiểu cơ bản của \citet{liu2024formalizing} là các lựa chọn của $\mathcal{A}$:
+\begin{align}
+  \text{Naive:}\ & \tilde{x} = x_t \concat s_e \concat x_e, \\
+  \text{Escape Characters:}\ & \tilde{x} = x_t \concat \texttt{\textbackslash n} \concat s_e \concat x_e, \\
+  \text{Context Ignoring:}\ & \tilde{x} = x_t \concat c_{\mathrm{ign}} \concat s_e \concat x_e, \\
+  \text{Fake Completion:}\ & \tilde{x} = x_t \concat c_{\mathrm{fake}} \concat s_e \concat x_e, \\
+  \text{Combined:}\ & \tilde{x} = x_t \concat c \concat s_e \concat x_e,\quad c = \texttt{\textbackslash n} \concat c_{\mathrm{fake}} \concat \texttt{\textbackslash n} \concat c_{\mathrm{ign}}.
+\end{align}
+Ở đây $c_{\mathrm{ign}}$ là câu bảo mô hình bỏ qua ngữ cảnh trước và $c_{\mathrm{fake}}$ là câu giả vờ tác vụ đích đã xong; $c$ là chuỗi nối (connector). Các nhóm nâng cao của bộ prompt (roleplay, đổi ngôn ngữ, che giấu, many-shot) là những lựa chọn khác của $\mathcal{A}$, trong đó $s_e$ được bọc, dịch, mã hoá hoặc đứng sau nhiều ví dụ giả. Khi $\tilde{x}$ thay cho $x_t$, mô hình nhận $f(\sigma,\, s_t \concat \tilde{x};\, \omega)$.
+
+\subsection{Mục tiêu của kẻ tấn công và hàm thành công}
+Mỗi mẫu tấn công $p$ mang một mục tiêu $g_p \in \{\texttt{leak}, \texttt{integrity}, \texttt{tool\_action}\}$ và một \emph{hàm thành công} xác định bằng quy tắc, \emph{không} dùng LLM chấm:
+\begin{equation}
+  \varphi_p(o, k) \in \{0,1\},
+\end{equation}
+nhận đầu ra cuối $o$ của hệ thống và canary $k$ của lần chạy đó. Bốn dạng được dùng: \texttt{canary\_leak} ($\varphi = \mathbb{1}[k \text{ xuất hiện trong } o]$), \texttt{contains} (chứa một chuỗi cho trước), \texttt{regex} (khớp biểu thức chính quy) và \texttt{tool\_call} (agent giả lập ghi nhận lời gọi công cụ đúng tên và đối số). Đây là định nghĩa thao tác của ``tấn công thành công''; nó là biến thể của giá trị tấn công ASV trong bài gốc và bỏ lỡ các trường hợp mô hình làm theo kẻ tấn công nhưng diễn đạt khác (xem \cref{sec:limits}).
+
+\subsection{Hệ thống phòng thủ}
+Hệ thống phòng thủ là một bộ bốn thành phần $D = (D_1, D_2, D_3, D_4)$ áp dụng theo thứ tự cố định L1$\to$L2$\to$L3$\to$mô hình$\to$L4. Ba thành phần đầu nhận chỉ dẫn và tài liệu, trả một quyết định $a_i \in \{\mathsf{pass}, \mathsf{sanitize}, \mathsf{block}\}$ cùng tài liệu đã xử lý:
+\begin{align}
+  (a_1, x^{(1)}) &= D_1(s_t, \tilde{x}), \\
+  (a_2, x^{(2)}) &= D_2(s_t, x^{(1)}), \qquad a_2 = \mathsf{block} \iff \pi_2(s_t, x^{(1)}) \ge \theta_2, \\
+  (a_3, x^{(3)}, \sigma_+, u_+) &= D_3(s_t, x^{(2)}),
+\end{align}
+trong đó $\pi_2 \in [0,1]$ là điểm nghi ngờ của L2, $\theta_2$ là ngưỡng, $\sigma_+$ là phần bổ sung cho system prompt và $u_+$ là phần nối vào cuối thông điệp người dùng (dùng cho sandwich). Nếu $a_1$ hoặc $a_2$ bằng $\mathsf{block}$, hệ thống không gọi mô hình mà trả câu từ chối cố định $r_0 =: \bot$. Ngược lại mô hình chạy một lần:
+\begin{equation}
+  y_1 = f\bigl(\sigma \,\Vert\, \sigma_+,\; s_t \concat x^{(3)} \concat u_+;\ \omega\bigr).
+\end{equation}
+Lớp thứ tư cần đến mô hình nên được định nghĩa trên $(s_t, x^{(3)}, y_1)$ và quyền gọi lại $f$:
+\begin{equation}
+  a_4 = D_4\bigl(s_t, x^{(3)}, y_1; f\bigr) \in \{\mathsf{pass}, \mathsf{block}\},
+\end{equation}
+và đầu ra cuối là
+\begin{equation}
+  o = D(\sigma, s_t, \tilde{x};\omega) =
+  \begin{cases}
+    \bot & \text{nếu có } i \in \{1,2,4\}: a_i = \mathsf{block},\\
+    y_1 & \text{ngược lại.}
+  \end{cases}
+\end{equation}
+Một \emph{cấu hình} là tập con $S \subseteq \{1,2,3,4\}$ các lớp đang bật; lớp không bật hoạt động như phép đồng nhất. Cấu hình rỗng là mô hình trần (baseline) và các cấu hình cộng dồn là $S = \{1\}$, $\{1,2\}$, $\{1,2,3\}$, $\{1,2,3,4\}$.
+
+\paragraph{Đầu vào và đầu ra tóm tắt.} Đầu vào là bộ ba (yêu cầu người dùng $s_t$, tài liệu không tin cậy $\tilde{x}$, system prompt $\sigma$ chứa canary $k$); đầu ra là phản hồi $o \in \mathcal{Y} \cup \{\bot\}$ của hệ thống, trong đó $\bot$ là ``bị chặn''. Bản thân bộ phòng thủ không được dùng $\varphi_p$ hay nhãn tấn công/lành tính của mẫu; nếu không thì phép đo trở nên vô nghĩa.
+
+\subsection{Các thước đo}
+Gọi $\mathcal{P}_{\mathrm{atk}}$ là tập mẫu tấn công và $\mathcal{B}$ là tập mẫu lành tính (tài liệu sạch có kèm $K_b$, danh sách ý chính mà bản tóm tắt đúng phải có). Mỗi mẫu được chạy $m$ lần với các $\omega_j$ khác nhau.
+
+\begin{definition}[ASR]
+\begin{equation}\label{eq:asr}
+  \ASR(D;\mathcal{P}_{\mathrm{atk}}) = \frac{1}{|\mathcal{P}_{\mathrm{atk}}|}\sum_{p\in\mathcal{P}_{\mathrm{atk}}}\frac{1}{m}\sum_{j=1}^{m}\mathbb{1}\bigl[o_{p,j}\neq\bot\ \wedge\ \varphi_p(o_{p,j},k_{p,j})=1\bigr].
+\end{equation}
+Mẫu bị chặn ($o=\bot$) luôn tính là tấn công thất bại.
+\end{definition}
+
+\begin{definition}[Tỉ lệ từ chối oan]
+\begin{equation}\label{eq:frr}
+  \FRR(D;\mathcal{B}) = \frac{1}{|\mathcal{B}|}\sum_{b\in\mathcal{B}}\frac{1}{m}\sum_{j=1}^{m}\mathbb{1}\bigl[o_{b,j}=\bot\ \vee\ \mathrm{refuse}(o_{b,j})\bigr],
+\end{equation}
+với $\mathrm{refuse}(\cdot)$ là quy tắc đơn giản nhận diện việc chính mô hình từ chối trả lời. Phần chặn bởi từng lớp được báo riêng; với L1 và L2 đây là FPR theo nghĩa của \citet{liu2024formalizing}.
+\end{definition}
+
+\begin{definition}[Chất lượng tác vụ, utility]
+\begin{equation}\label{eq:util}
+  \Util(D;\mathcal{B}) = \frac{1}{|\mathcal{B}|}\sum_{b\in\mathcal{B}}\frac{1}{m}\sum_{j=1}^{m}\mathbb{1}[o_{b,j}\neq\bot]\cdot\frac{\bigl|\{\kappa\in K_b:\ \kappa\ \text{xuất hiện trong}\ o_{b,j}\}\bigr|}{|K_b|}.
+\end{equation}
+Mẫu lành tính bị chặn có utility 0. Đây là chỉ số thô, so khớp ý chính bằng quy tắc, tương ứng PNA-T trong \citet{liu2024formalizing}.
+\end{definition}
+
+\begin{definition}[Chi phí]
+Gọi $N(D)$ là số lần gọi mô hình trung bình và $T(D)$ là độ trễ trung bình trên mỗi mẫu. Chi phí tương đối so với mô hình trần là $\rho_N = N(D)/N(\emptyset)$ và $\rho_T = T(D)/T(\emptyset)$.
+\end{definition}
+
+\subsection{Mục tiêu tối ưu}
+Về nguyên tắc, ta muốn một $D$ làm ASR thấp nhất mà không phá hỏng ứng dụng. Phát biểu dưới dạng tối ưu có ràng buộc:
+\begin{equation}\label{eq:opt}
+  \begin{aligned}
+    \min_{S,\ \theta}\quad & \ASR\bigl(D_{S,\theta};\ \mathcal{P}_{\mathrm{atk}}\bigr)\\
+    \text{s.t.}\quad & \FRR\bigl(D_{S,\theta};\ \mathcal{B}\bigr)\le \varepsilon_F,\\
+                     & \Util\bigl(D_{S,\theta};\ \mathcal{B}\bigr)\ge \Util(\emptyset;\mathcal{B})-\delta,\\
+                     & \rho_T(D_{S,\theta})\le \kappa_T,
+  \end{aligned}
+\end{equation}
+với $\theta$ là tham số của các lớp (ngưỡng $\theta_2$, ngưỡng của L4, từ khoá và danh sách của L1, chọn biến thể L3). Trong thực hành có hai điểm khác với \eqref{eq:opt}:
+\begin{enumerate}[label=(\roman*)]
+  \item Kẻ tấn công thật sinh $\tilde{x}$ từ phân phối mà người thiết kế không biết. Vì vậy $\theta$ chỉ được chọn dựa trên $\mathcal{P}_{\mathrm{tr}}$ (train) và phần benign dùng để chỉnh ($\mathcal{B}_{\mathrm{tune}}$), còn đại lượng quan tâm là $\ASR$ trên $\mathcal{P}_{\mathrm{ho}}$ (hold-out) gồm kỹ thuật chưa thấy. Khoảng cách tổng quát hoá là $\Delta_{\mathrm{gen}} = \ASR(D;\mathcal{P}_{\mathrm{ho}}) - \ASR(D;\mathcal{P}_{\mathrm{tr}})$.
+  \item Không có một thước đo vô hướng duy nhất, nên báo cáo bộ chỉ tiêu $(\ASR,\FRR,\Util,\rho_N,\rho_T)$ cho từng cấu hình và xét tập không bị trội (Pareto) thay vì tuyên bố một ``tốt nhất''. Ngưỡng $\kappa_T$ được lấy theo gợi ý của giảng viên là không để phản hồi chậm hơn khoảng 2--3 lần; $\varepsilon_F$ và $\delta$ là các lựa chọn của nhóm, phải được cố định \emph{trước} khi chạy hold-out: $\varepsilon_F$ = \FILL{giá trị chốt}, $\delta$ = \FILL{giá trị chốt}.
+\end{enumerate}
+
+\subsection{Mô hình đe doạ}\label{sec:threat}
+Mô hình đe doạ dựa trên phân loại của \citet{greshake2023indirect} và \citet{perez2022ignore}, thu hẹp lại cho tình huống đo được:
+\begin{assumption}[Năng lực của kẻ tấn công]
+Kẻ tấn công kiểm soát \emph{toàn bộ nội dung} của tài liệu $\tilde{x}$ (ví dụ qua email gửi tới hoặc trang web), nhưng không kiểm soát $s_t$, $\sigma$, mô hình hay cấu hình phòng thủ. Mỗi lần tấn công là một tài liệu, một lượt (single-turn).
+\end{assumption}
+\begin{assumption}[Hiểu biết của kẻ tấn công]
+Kẻ tấn công biết tác vụ chung là tóm tắt/hỏi đáp tài liệu và có thể biết hệ thống có canary hay chuỗi nhạy cảm, nhưng \emph{không biết} giá trị canary, nội dung system prompt, hay cài đặt cụ thể của L1--L4.
+\end{assumption}
+\begin{assumption}[Không thích ứng]
+Payload được viết cố định, không được tối ưu hoá theo phản hồi của hệ thống hay theo từng lớp phòng thủ. Do đó kết quả là ước lượng cho kẻ tấn công \emph{không thích ứng}, thường lạc quan hơn so với kẻ tấn công thích ứng.
+\end{assumption}
+\begin{assumption}[Mục tiêu]
+Gồm ba loại: làm lộ thông tin bí mật trong system prompt (\texttt{leak}), ép đầu ra chứa nội dung do kẻ tấn công chọn (\texttt{integrity}) và ép gọi công cụ giả lập (\texttt{tool\_action}).
+\end{assumption}
+Ngoài phạm vi: đầu độc dữ liệu huấn luyện, tấn công tối ưu hoá bằng gradient hay truy vấn thích ứng, hội thoại nhiều lượt, đa phương thức, công cụ có tác dụng phụ thật, và tấn công từ chối dịch vụ. Lưu ý rằng chặn một tài liệu lành tính vẫn là mất dịch vụ cho người dùng, nên được tính vào $\FRR$ thay vì bỏ qua.
+
+\begin{table}[t]
+\centering\small
+\caption{Bảng ký hiệu.}\label{tab:notation}
+\begin{tabularx}{\linewidth}{@{}>{$}l<{$}Y@{\hspace{1.2em}}>{$}l<{$}Y@{}}
+\toprule
+\multicolumn{1}{@{}l}{Ký hiệu} & Ý nghĩa & \multicolumn{1}{l}{Ký hiệu} & Ý nghĩa\\
+\midrule
+s_t, x_t & chỉ dẫn và dữ liệu đích (sạch) & D_i & lớp phòng thủ thứ $i$, $i=1..4$\\
+s_e, x_e & chỉ dẫn và dữ liệu tiêm vào & a_i & quyết định: pass, sanitize, block\\
+c, c_{\mathrm{ign}}, c_{\mathrm{fake}} & chuỗi nối; câu ``bỏ qua''; câu giả hoàn thành & \pi_2,\ \theta_2 & điểm nghi ngờ và ngưỡng của L2\\
+\tilde{x} = \mathcal{A}(x_t,s_e,x_e) & dữ liệu bị nhiễm & \sigma_+,\ u_+ & phần thêm vào system prompt và cuối thông điệp (L3)\\
+f,\ \omega & mô hình ngôn ngữ; nhiệt độ và hạt giống & \bot & câu từ chối cố định khi bị chặn\\
+\sigma_0,\ k & system prompt gốc; canary ngẫu nhiên & o,\ y_1 & đầu ra cuối; phản hồi lần đầu của mô hình\\
+g_p,\ \varphi_p & mục tiêu và hàm thành công của mẫu $p$ & S,\ \theta & cấu hình (tập lớp bật); tham số\\
+\mathcal{P}_{\mathrm{tr}},\mathcal{P}_{\mathrm{ho}} & tập tấn công train, hold-out & \mathcal{B},\ K_b & tập benign; ý chính tham chiếu\\
+m & số lần lấy mẫu mỗi prompt & \rho_N,\rho_T & chi phí tương đối: số lần gọi, độ trễ\\
+\bottomrule
+\end{tabularx}
+\end{table}

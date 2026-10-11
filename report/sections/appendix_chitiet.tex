@@ -1,0 +1,78 @@
+\section{Ví dụ định tính}\label{app:qual}
+
+\subsection{Minh hoạ cơ chế chuẩn hoá của L1}
+Bảng dưới minh hoạ \emph{cơ chế} (không phải kết quả thực nghiệm): các biến đổi hình thức được tạo ra từ câu mẫu \texttt{ignore previous instructions} và được kiểm tra trực tiếp bằng thư viện \code{unicodedata} của Python. Nó giải thích vì sao L1 cần nhiều bước chứ không chỉ NFKC.
+
+\begin{table}[ht]
+\centering\small
+\caption[Tác dụng của NFKC lên các biến đổi hình thức]{Tác dụng của NFKC lên các biến đổi hình thức (câu mẫu tiếng Anh).}\label{tab:l1-illus}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.4cm}YY@{}}
+\toprule
+Biến đổi & Dạng sau biến đổi & NFKC có khôi phục câu mẫu? & Bước L1 cần thêm\\
+\midrule
+Chèn ký tự vô hình & \texttt{ig}\ucode{200B}\texttt{nore previous instructions} & Không (vẫn còn \ucode{200B}) & Xoá ký tự vô hình\\
+Chữ Latinh toàn chiều rộng & mỗi chữ cái thay bằng dạng toàn chiều rộng (U+FF41--U+FF5A) & Có & Không\\
+Homoglyph Cyrillic & \texttt{ign}\ucode{043E}\texttt{re previous instructions} & Không (\ucode{043E} vẫn là chữ Cyrillic) & Ánh xạ homoglyph\\
+Base64 & \texttt{aWdub3JlIHByZXZp\allowbreak b3VzIGluc3RydWN0\allowbreak aW9ucw==} & Không & Giải mã rồi quét lại\\
+ROT13 & \texttt{vtaber cerivbhf vafgehpgvbaf} & Không & Thử ROT13 rồi quét lại\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Ví dụ theo nhóm lỗi}
+Phần này sẽ gồm vài ví dụ rút gọn, đã che nội dung nhạy cảm, cho từng nhóm trong \cref{tab:errors}: một tấn công lọt L1, một lọt L2, một lọt L3, một lọt L4, một ca chấm sai và một ca benign bị chặn nhầm. Mỗi ví dụ nêu mã prompt, cấu hình, đoạn trích phản hồi (từ \code{outputs.jsonl}) và lý do chặn/không chặn. \TODO{điền theo số liệu: chọn ví dụ từ outputs.jsonl của lần chạy cuối}.
+
+\section{Tài liệu và dữ liệu tham khảo bổ sung}\label{app:more}
+Các bộ dữ liệu công khai dưới đây là nguồn tiềm năng cho prompt tấn công hoặc benign. Thông tin lấy từ trang dữ liệu trên Hugging Face vào 10/2026 (chưa tải về, chưa chạy thử). Mẫu nào thực sự được đưa vào bộ prompt phải ghi trong cột ``Nguồn'' của phụ lục A, kèm giấy phép.
+
+\begin{table}[ht]
+\centering\small
+\caption[Bộ dữ liệu công khai làm nguồn mẫu]{Bộ dữ liệu công khai có thể dùng làm nguồn mẫu.}\label{tab:datasets}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.7cm}p{2.0cm}>{\raggedright\arraybackslash}p{2.8cm}Y@{}}
+\toprule
+Bộ dữ liệu & Giấy phép & Quy mô (trang dữ liệu) & Ghi chú\\
+\midrule
+\texttt{deepset/\allowbreak prompt-\allowbreak injections} & Apache-2.0 & 546 train, 116 test & Nhãn nhị phân 0/1; mẫu hiển thị bằng tiếng Anh\\
+\texttt{Lakera/\allowbreak gandalf\_\allowbreak ignore\_\allowbreak instructions} & MIT & 777 train, 111 validation, 112 test & Tiếng Anh; cột \texttt{text} và \texttt{similarity}\\
+\texttt{jackhhao/\allowbreak jailbreak-\allowbreak classification} & Apache-2.0 & 1.306 dòng (train và test 262) & Nhãn \texttt{jailbreak} / \texttt{benign}; tiếng Anh\\
+\texttt{xTRam1/\allowbreak safe-guard-\allowbreak prompt-\allowbreak injection} & trang không ghi giấy phép & 8,24 nghìn train, 2,06 nghìn test & Nhãn 0/1; trang không định nghĩa nhãn tường minh\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Ngoài ra: NotInject và InjecGuard~\citep{li2024injecguard} (339 mẫu benign có từ khoá dễ gây chặn nhầm) là cơ sở cho thiết kế tập benign; BIPIA~\citep{yi2025bipia} và Tensor Trust~\citep{toyer2024tensortrust} là nguồn mở rộng sau này; Qwen3~\citep{yang2025qwen3} là mô hình dự kiến ban đầu.
+
+\section{Thông tin tái lập}\label{app:repro}
+
+\subsection{Các cột của \texttt{results.csv}}
+Mỗi dòng là một prompt, một cấu hình, một lần lấy mẫu. \Cref{tab:csv-cols} liệt kê các cột (theo hợp đồng chung của nhóm).
+
+\begin{table}[ht]
+\centering\small
+\caption{Các cột của \texttt{results.csv}.}\label{tab:csv-cols}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.4cm}Y@{}}
+\toprule
+Cột & Ý nghĩa\\
+\midrule
+\texttt{run\_id}, \texttt{model}, \texttt{config} & mã lần chạy; mô hình; cấu hình (\texttt{baseline}, \texttt{L1}, \texttt{L1+L2}, \dots, \texttt{only\_Lk})\\
+\texttt{prompt\_id}, \texttt{split}, \texttt{label} & mã prompt; tập (\texttt{train}, \texttt{holdout}, \texttt{benign}, \texttt{test\_indist}); \texttt{attack} hoặc \texttt{benign}\\
+\texttt{attack\_type}, \texttt{liu\_type}, \texttt{technique}, \texttt{goal\_type} & nhãn của prompt\\
+\texttt{sample\_idx}, \texttt{temperature} & chỉ số lần lấy mẫu; nhiệt độ\\
+\texttt{blocked}, \texttt{blocked\_by} & có bị chặn không; lớp chặn (\texttt{L1}, \texttt{L2}, \texttt{L4} hoặc rỗng)\\
+\texttt{attack\_success} & 0/1 theo \texttt{success\_check} (bị chặn thì 0; benign để trống)\\
+\texttt{model\_refused} & mô hình tự từ chối (quy tắc đơn giản)\\
+\texttt{utility\_score} & chỉ benign: tỉ lệ ý chính tham chiếu xuất hiện; benign bị chặn tính 0\\
+\texttt{n\_model\_calls}, \texttt{latency\_ms\_total}, \texttt{latency\_ms\_layers} & số lần gọi mô hình; tổng thời gian; thời gian các lớp phòng thủ\\
+\texttt{error} & rỗng nếu thành công, ngược lại lỗi ngắn\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Thông tin cần chốt khi đóng băng}
+Các mục sau được điền khi đóng băng mã (\code{v1.0}); chúng cố ý chưa được suy đoán trong bản khung này.
+\begin{itemize}
+  \item Mã băm commit đóng băng và \code{run\_id} của ma trận cuối: \FILL{điền}.
+  \item Lệnh chạy ma trận cuối và lệnh sinh bảng/hình (\code{analysis/stats.py}): \FILL{điền}.
+  \item Nội dung system prompt, prompt chấm của L2, chuỗi che của L4, danh sách ký hiệu $\mu$ và ranh giới của L3: \FILL{dán từ mã đóng băng}.
+  \item Ngưỡng cuối $\theta_2$, $\tau$, độ sâu $d_{\max}$ và quy tắc chọn: \FILL{điền}.
+\end{itemize}
