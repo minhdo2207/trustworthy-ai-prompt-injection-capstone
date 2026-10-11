@@ -259,6 +259,28 @@ def test_l4_calls_and_block(env):
     assert len({CANARY_RE.search(c["messages"][0]["content"]).group(1) for c in f1_calls[:2]}) == 1
 
 
+def test_l4_masked_run_does_not_see_real_task_via_l3_suffix(env):
+    """Hồi quy: user_suffix của L3 lặp lại tác vụ thật; lượt che của L4 không được chứa nó."""
+    seen = {}
+
+    def l3(task, doc):
+        seen["task"] = task
+        return result("sanitize", doc, system_addendum=f"Hierarchy for: {task}",
+                      user_suffix=f"Your only task is: {task}")
+
+    def l4(task, doc, first, generate):
+        generate("MASKED-NEUTRAL-TASK", doc)
+        return result("pass", doc)
+
+    env.install(L3=l3, L4=l4)
+    env.go("--configs", "L3+L4", "--splits", "train", "--limit", "1")
+    first, masked = env.chat.calls[0]["messages"], env.chat.calls[1]["messages"]
+    real = seen["task"]
+    assert real in first[0]["content"] and real in first[-1]["content"]
+    assert real not in masked[0]["content"] and real not in masked[-1]["content"]
+    assert "MASKED-NEUTRAL-TASK" in masked[-1]["content"]
+
+
 def test_l4_sees_tool_calls_as_text(env):
     got = {}
 

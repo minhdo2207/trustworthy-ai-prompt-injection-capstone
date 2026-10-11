@@ -309,8 +309,14 @@ class Evaluator:
             """Cho L4: cùng model/canary/system prompt/L3 như lần chạy chính."""
             nonlocal n_calls
             n_calls += 1
-            r = self.agent.run(task, document, canary, "\n\n".join(addenda),
-                               "\n\n".join(suffixes), temperature,
+            # Lượt che của L4 không được thấy tác vụ thật: L3 (sandwich) lặp lại tác vụ trong
+            # user_suffix, nên phải thay bằng tác vụ đã che (lỗi này từng làm L4 chặn ~47% benign).
+            adds, sufs = addenda, suffixes
+            if task != user_task:
+                adds = [a.replace(user_task, task) for a in addenda]
+                sufs = [x.replace(user_task, task) for x in suffixes]
+            r = self.agent.run(task, document, canary, "\n\n".join(adds),
+                               "\n\n".join(sufs), temperature,
                                derive_seed(self.seed_base, pid, sample_idx, n_calls - 1))
             return GenResult(r.response, r.tool_calls)
 
