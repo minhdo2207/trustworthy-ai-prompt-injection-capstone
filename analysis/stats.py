@@ -63,6 +63,8 @@ class Context:
     configs: list[str]
     splits: list[str]
     benign_meta: dict[str, bool | None] | None = None
+    benign_ext: pd.DataFrame = field(default_factory=pd.DataFrame)   # split ext_benign (tách riêng, không có utility)
+    attack_splits: list[str] = field(default_factory=list)           # mọi split tấn công, kể cả không chấm được ASR
     extra_issues: list[Issue] = field(default_factory=list)
     skipped: dict[str, str] = field(default_factory=dict)
     _vec: dict[tuple[str, str], pd.Series] = field(default_factory=dict)
@@ -107,7 +109,9 @@ def build_context(loaded: Loaded, *, b: int = DEFAULT_B, seed: int = DEFAULT_SEE
                   error_threshold: float = DEFAULT_ERROR_THRESHOLD) -> Context:
     valid = loaded.valid
     attack = valid[valid["label"] == "attack"]
-    benign_all = _prepare_benign(valid[valid["label"] == "benign"])
+    scored = attack[attack["attack_success"].notna()]   # ext_attack goal_type=other để trống: không vào ASR
+    benign_all = _prepare_benign(valid[(valid["label"] == "benign") & (valid["split"] == "benign")])
+    benign_ext = _prepare_benign(valid[valid["split"] == "ext_benign"])
     extra: list[Issue] = []
     benign_eval, scope = benign_all, "tất cả benign (không có --benign-meta nên không loại được phần `tune`)"
     if benign_meta is not None:
@@ -121,15 +125,18 @@ def build_context(loaded: Loaded, *, b: int = DEFAULT_B, seed: int = DEFAULT_SEE
         scope = "chỉ benign `tune:false`"
         if benign_eval.empty and not benign_all.empty:
             raise DataError("--benign-meta không để lại prompt benign `tune:false` nào trong CSV")
-    present = set(attack["split"])
+    present = set(scored["split"])
     splits = [s for s in ATTACK_SPLITS if s in present] + sorted(present - set(ATTACK_SPLITS))
-    ps = _prompt_level_attack(attack) if len(attack) else pd.DataFrame(
+    every = set(attack["split"])
+    attack_splits = [s for s in ATTACK_SPLITS if s in every] + sorted(every - set(ATTACK_SPLITS))
+    ps = _prompt_level_attack(scored) if len(scored) else pd.DataFrame(
         columns=["config", "split", "prompt_id", "attack_type", "liu_type", "technique",
                  "goal_type", "n", "k", "asr"])
     return Context(loaded=loaded, b=b, seed=seed, error_threshold=error_threshold, valid=valid,
                    attack=attack, benign_all=benign_all, benign_eval=benign_eval,
                    benign_scope=scope, ps=ps, configs=order_configs(list(valid["config"].unique())),
-                   splits=splits, benign_meta=benign_meta, extra_issues=extra)
+                   splits=splits, benign_meta=benign_meta, benign_ext=benign_ext, attack_splits=attack_splits,
+                   extra_issues=extra)
 
 
 # ---------------------------------------------------------------------------
@@ -456,6 +463,35 @@ def _utility_delta_cell(r: tuple[float, float, float]) -> str:
     return f"{signed(d)} [{signed(lo)}, {signed(hi)}]"
 
 
+def table_benign_ext(ctx: Context) -> Table | None:
+    """Bảng 5c: benign ngoài (ext_benign). Không có utility; zero-shot nên không tách `tune`."""
+    bd = ctx.benign_ext
+    if bd.empty:
+        return None
+    pl = _benign_prompt_level(bd)
+    rows = []
+    for cfg in [c for c in ctx.configs if c in set(bd["config"])]:
+        g, pp = bd[bd["config"] == cfg], pl[pl["config"] == cfg]
+        s = rate_summary(int(g["refused"].sum()), len(g), pp["refused_rate"].tolist(), ctx)
+        rows.append({"config": cfg, "n_runs": len(g), "n_prompts": len(pp), "n_refused": int(g["refused"].sum()),
+                     "fpr": s["rate"], "fpr_wilson_lo": s["wilson_lo"], "fpr_wilson_hi": s["wilson_hi"],
+                     "fpr_boot_lo": s["boot_lo"], "fpr_boot_hi": s["boot_hi"],
+                     "blocked_rate": float(g["blocked_i"].mean()), "model_refused_rate": float(g["model_only"].mean())})
+    data = _frame(rows)
+    disp = pd.DataFrame({
+        "Config": data["config"], "Lượt": data["n_runs"].astype(int), "Prompt": data["n_prompts"].astype(int),
+        "Từ chối oan (%)": data["fpr"].map(pct),
+        "Wilson 95%": [pct_ci(a, b) for a, b in zip(data["fpr_wilson_lo"], data["fpr_wilson_hi"])],
+        "Bootstrap 95%": [pct_ci(a, b) for a, b in zip(data["fpr_boot_lo"], data["fpr_boot_hi"])],
+        "Bị chặn (%)": data["blocked_rate"].map(pct),
+        "Model từ chối (%)": data["model_refused_rate"].map(pct),
+    })
+    return Table(
+        "tab05c_benign_ext", "Bảng 5c. Benign ngoài (ext_benign): từ chối oan", data, disp,
+        note=("Tài liệu benign thật từ dataset công khai (BIPIA, deepset, jackhhao); zero-shot, không chỉnh tham số theo "
+              "tập này. Không có `reference_keypoints` nên không có utility. Từ chối oan = bị chặn hoặc model tự từ chối."))
+
+
 def table_benign_by_tune(ctx: Context) -> Table | None:
     if ctx.benign_meta is None or ctx.benign_all.empty:
         return None
@@ -493,7 +529,10 @@ def table_benign_by_tune(ctx: Context) -> Table | None:
 
 def table_cost(ctx: Context) -> Table:
     v = ctx.valid
-    pops = {"benign": v[v["label"] == "benign"], "attack": v[v["label"] == "attack"], "all": v}
+    pops = {"benign": v[(v["label"] == "benign") & (v["split"] == "benign")], "attack": v[v["label"] == "attack"],
+            "all": v}
+    if not ctx.benign_ext.empty:
+        pops["ext_benign"] = v[v["split"] == "ext_benign"]
     rows = []
     for pop, df in pops.items():
         for cfg in [c for c in ctx.configs if c in set(df["config"])]:
@@ -541,9 +580,11 @@ def table_cost(ctx: Context) -> Table:
 # ---------------------------------------------------------------------------
 
 def _populations(ctx: Context) -> list[tuple[str, pd.DataFrame]]:
-    pops = [(s, ctx.attack[ctx.attack["split"] == s]) for s in ctx.splits]
+    pops = [(s, ctx.attack[ctx.attack["split"] == s]) for s in (ctx.attack_splits or ctx.splits)]
     if not ctx.benign_eval.empty:
         pops.append(("benign", ctx.benign_eval))
+    if not ctx.benign_ext.empty:
+        pops.append(("ext_benign", ctx.benign_ext))
     return pops
 
 
@@ -880,7 +921,7 @@ Hạt giống cố định (`seed=%(seed)d`), mỗi khoảng dùng bộ sinh s�
 
 **Lưu ý đọc kết quả.** (1) Mỗi bảng chỉ phản ánh đúng các lượt đã chạy với nhiệt độ/mô hình trong `run_config.json`.
 (2) Số trên `train` và `tune:true` đã được dùng để chỉnh phòng thủ nên lạc quan; số báo cáo chính dùng `holdout`,
-`test_indist` và benign `tune:false`. (3) Với $n$ nhỏ, không rút ra kết luận mạnh từ khác biệt vài điểm phần trăm.
+`test_indist` và benign `tune:false`. Split `ext_attack`/`ext_benign` là dữ liệu công khai chạy zero-shot một lần: ASR của `ext_attack` chỉ tính trên các mục chấm được (`goal_type=leak`; mục `goal_type=other` có `attack_success` rỗng và chỉ góp vào tỉ lệ bị chặn), `ext_benign` không có utility. (3) Với $n$ nhỏ, không rút ra kết luận mạnh từ khác biệt vài điểm phần trăm.
 """
 
 
@@ -901,12 +942,14 @@ def _overview(ctx: Context, paths: list[str]) -> str:
     prompts = "; ".join(
         f"{s}: {ctx.ps.loc[ctx.ps['split'] == s, 'prompt_id'].nunique()} prompt" for s in ctx.splits)
     n_ben = ctx.benign_all["prompt_id"].nunique()
+    n_ext = ctx.benign_ext["prompt_id"].nunique()
     lines = [
         f"- Nguồn: {', '.join(f'`{p}`' for p in paths)}",
         f"- Model: {', '.join(models)}; run_id: {', '.join(runs)}",
         f"- Tổng dòng: {len(rows)}; hợp lệ: {len(valid)}; lỗi bị loại: {int(rows['is_error'].sum())}",
         f"- Cấu hình ({len(ctx.configs)}): {', '.join(ctx.configs)}",
-        f"- Prompt tấn công: {prompts}; prompt benign: {n_ben} (phạm vi bảng benign: {ctx.benign_scope})",
+        f"- Prompt tấn công: {prompts}; prompt benign: {n_ben} (phạm vi bảng benign: {ctx.benign_scope})"
+        + (f"; ext_benign: {n_ext}" if n_ext else ""),
         f"- Số lượt hợp lệ mỗi (cấu hình, prompt): {spp}",
         f"- Bootstrap: B={ctx.b}, seed={ctx.seed}; khoảng tin cậy 95%",
     ]
@@ -951,7 +994,7 @@ def compute_tables(ctx: Context) -> list[Table]:
         abl = table_ablation(ctx, cum)
         if abl is not None:
             tables.append(abl)
-    for t in (table_benign(ctx), table_benign_by_tune(ctx)):
+    for t in (table_benign(ctx), table_benign_by_tune(ctx), table_benign_ext(ctx)):
         if t is not None:
             tables.append(t)
     tables.append(table_cost(ctx))
