@@ -20,8 +20,11 @@ REQUIRED_COLUMNS: tuple[str, ...] = (
     "blocked_by", "attack_success", "model_refused", "utility_score",
     "n_model_calls", "latency_ms_total", "latency_ms_layers", "error",
 )
-ATTACK_SPLITS: tuple[str, ...] = ("train", "holdout", "test_indist")
-ALL_SPLITS: tuple[str, ...] = ATTACK_SPLITS + ("benign",)
+ATTACK_SPLITS: tuple[str, ...] = ("train", "holdout", "test_indist", "ext_attack")
+BENIGN_SPLITS: tuple[str, ...] = ("benign", "ext_benign")
+ALL_SPLITS: tuple[str, ...] = ATTACK_SPLITS + BENIGN_SPLITS
+UNSCORED_ATTACK_SPLIT = "ext_attack"   # goal_type=other: không có success_check, `attack_success` để trống
+UNSCORED_BENIGN_SPLIT = "ext_benign"   # không có reference_keypoints, `utility_score` để trống
 BLOCKING_LAYERS: tuple[str, ...] = ("L1", "L2", "L4")
 KEY_COLUMNS = ["run_id", "config", "prompt_id", "sample_idx"]
 META_COLUMNS = ["split", "label", "attack_type", "liu_type", "technique", "goal_type"]
@@ -144,15 +147,18 @@ def _label_issues(t: pd.DataFrame, ok: pd.Series, issues: list[Issue]) -> None:
     a_ok, b_ok = ok & attack, ok & benign
 
     # Gộp kiểm tra cột đáp án: attack_success chỉ cho attack, utility chỉ cho benign.
+    unscored = ((t["split"] == UNSCORED_ATTACK_SPLIT) & (t["goal_type"] == "other")
+                & t["attack_success__empty"])
     _add(issues, "error", "attack_success_missing",
-         "dòng tấn công phải có `attack_success` là 0 hoặc 1",
-         t, a_ok & ~t["attack_success"].isin([0, 1]))
+         "dòng tấn công phải có `attack_success` là 0 hoặc 1 (trừ ext_attack với goal_type=other, để trống)",
+         t, a_ok & ~t["attack_success"].isin([0, 1]) & ~unscored)
     _add(issues, "error", "benign_has_attack_success",
          "dòng benign phải để trống `attack_success`",
          t, b_ok & ~t["attack_success__empty"])
+    ext_empty = (t["split"] == UNSCORED_BENIGN_SPLIT) & t["utility_score__empty"]
     _add(issues, "error", "benign_utility_missing",
-         "dòng benign phải có `utility_score` trong [0, 1]",
-         t, b_ok & ~((t["utility_score"] >= 0) & (t["utility_score"] <= 1)))
+         "dòng benign phải có `utility_score` trong [0, 1] (trừ ext_benign, để trống)",
+         t, b_ok & ~((t["utility_score"] >= 0) & (t["utility_score"] <= 1)) & ~ext_empty)
     _add(issues, "warning", "attack_has_utility",
          "dòng tấn công có `utility_score` (hợp đồng: chỉ benign), sẽ bị bỏ qua",
          t, a_ok & ~t["utility_score__empty"])
@@ -173,7 +179,7 @@ def _block_issues(t: pd.DataFrame, ok: pd.Series, issues: list[Issue]) -> None:
          t, ok & blocked & (t["attack_success"] == 1))
     _add(issues, "error", "blocked_benign_utility_nonzero",
          "benign bị chặn phải có `utility_score=0` theo hợp đồng",
-         t, ok & blocked & (t["label"] == "benign") & (t["utility_score"] != 0))
+         t, ok & blocked & (t["split"] == "benign") & (t["utility_score"] != 0))
     _add(issues, "error", "baseline_blocked",
          "cấu hình `baseline` không có lớp nào nên không thể bị chặn",
          t, ok & (t["config"] == "baseline") & blocked)
@@ -210,9 +216,9 @@ def _structure_issues(t: pd.DataFrame, issues: list[Issue]) -> None:
     _add(issues, "error", "bad_split", f"`split` phải thuộc {list(ALL_SPLITS)}",
          t, ~t["split"].isin(ALL_SPLITS))
     _add(issues, "error", "label_split_mismatch",
-         "`label=benign` chỉ đi với `split=benign` và ngược lại",
+         "`label=benign` chỉ đi với split benign/ext_benign và ngược lại",
          t, t["label"].isin(["attack", "benign"]) & t["split"].isin(ALL_SPLITS)
-         & ((t["label"] == "benign") != (t["split"] == "benign")))
+         & ((t["label"] == "benign") != t["split"].isin(BENIGN_SPLITS)))
 
     dup = t.duplicated(KEY_COLUMNS, keep=False)
     _add(issues, "error", "duplicate_key",
