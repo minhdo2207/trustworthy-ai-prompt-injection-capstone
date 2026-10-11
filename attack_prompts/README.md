@@ -366,3 +366,7 @@ dữ liệu tổng hợp, không ghi giấy phép), NotInject của InjecGuard (
 tool_action, Tensor Trust (D4, quá lớn), HackAPrompt (cần đồng ý chia sẻ thông tin liên hệ). Khi dùng thêm, điền
 `source.origin="dataset"` kèm `url` và `license` (validate.py bắt buộc), ghi ngày truy cập vào `notes`, và để chúng vào
 file riêng trước khi quyết định chia train/hold-out.
+
+### Giấy phép của dữ liệu ngoài
+
+`ext_attack_prompts.json` và `ext_benign_prompts.json` gồm các mục điều chỉnh từ deepset/prompt-injections (Apache-2.0), Lakera/gandalf_ignore_instructions (MIT), jackhhao/jailbreak-classification (Apache-2.0) và BIPIA. Ngữ cảnh bảng và code của BIPIA theo CC BY-SA 4.0 (có ShareAlike) và các mục dùng ngữ cảnh đó (`context_kind` là `table` hoặc `code`) được phân phối lại theo cùng giấy phép CC BY-SA 4.0, kèm ghi công trong trường `source` của từng mục. Cần kiểm tra lại tính tương thích với giấy phép của kho trước khi công khai rộng.
