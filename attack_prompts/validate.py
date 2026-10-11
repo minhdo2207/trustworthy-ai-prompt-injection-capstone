@@ -2,6 +2,9 @@
 
 Chạy: python3 attack_prompts/validate.py   (thoát mã 1 nếu có lỗi)
 
+Tập ngoài (ext_attack/ext_benign, xem README mục "Dữ liệu ngoài") được kiểm riêng bằng `validate_external`;
+chạy `python3 attack_prompts/validate.py` sẽ kiểm cả hai nếu có các tệp `ext_*`.
+
 Lỗi (làm hỏng dữ liệu): thiếu trường, sai enum, id trùng, success_check sai, canary cố định,
 technique train trùng hold-out, hai prompt gần như giống hệt (> 0,85).
 Cảnh báo: cặp tương đồng 0,6–0,85, tài liệu nền dùng quá nhiều lần.
@@ -478,6 +481,215 @@ def compute_stats(by_split: dict[str, list[dict]], rep: Report) -> None:
     }
 
 
+# ---------- tập ngoài (zero-shot, từ dataset công khai) ----------
+
+EXT_GOAL_TYPES = GOAL_TYPES | {"other"}
+EXT_FILES = {"ext_attack": "ext_attack_prompts.json", "ext_benign": "ext_benign_prompts.json"}
+EXT_FULL_FILES = {"ext_attack": "ext_attack_full.json", "ext_benign": "ext_benign_full.json"}
+EXT_ID = {  # (split, đầy_đủ?) -> mẫu id
+    ("ext_attack", False): r"EX-\d{3}", ("ext_attack", True): r"EXF-\d{4}",
+    ("ext_benign", False): r"XB-\d{3}", ("ext_benign", True): r"XBF-\d{4}",
+}
+EXT_CONTEXT_KINDS = {"carrier", "email", "table", "code", "none"}
+EXT_SUBSETS = {"deepset", "gandalf", "jackhhao", "bipia_text", "bipia_code", "bipia_email", "bipia_table"}
+EXT_BENIGN_MIN_WORDS = 5
+
+
+def check_ext_record(rec: Any, split: str, full: bool, fname: str, refs: set[str], rep: Report) -> None:
+    where = f"{fname}:{rec.get('id', '?') if isinstance(rec, dict) else '?'}"
+    if not isinstance(rec, dict):
+        rep.err(f"{where}: phần tử không phải đối tượng")
+        return
+    if not (isinstance(rec.get("id"), str) and re.fullmatch(EXT_ID[(split, full)], rec["id"])):
+        rep.err(f"{where}: id phải dạng {EXT_ID[(split, full)]}")
+    if rec.get("split") != split:
+        rep.err(f"{where}: split={rec.get('split')!r} khác {split}")
+    for key in ("user_task", "untrusted_document"):
+        if not isinstance(rec.get(key), str) or not rec[key].strip():
+            rep.err(f"{where}: thiếu `{key}`")
+    if not isinstance(rec.get("notes"), str) or "src=" not in rec.get("notes", ""):
+        rep.err(f"{where}: notes phải ghi chỉ mục hàng gốc (`src=...`)")
+    if rec.get("subset") not in EXT_SUBSETS:
+        rep.err(f"{where}: subset phải thuộc {sorted(EXT_SUBSETS)}")
+    if rec.get("context_kind") not in EXT_CONTEXT_KINDS:
+        rep.err(f"{where}: context_kind phải thuộc {sorted(EXT_CONTEXT_KINDS)}")
+    check_source(rec, where, refs, rep)
+    src = rec.get("source") if isinstance(rec.get("source"), dict) else {}
+    if src.get("origin") != "dataset":
+        rep.err(f"{where}: tập ngoài phải có source.origin=dataset")
+    if rec.get("context_kind") in ("table", "code") and "CC-BY-SA" not in str(src.get("license", "")):
+        rep.err(f"{where}: ngữ cảnh {rec.get('context_kind')} (BIPIA) phải ghi giấy phép CC-BY-SA trong source.license")
+    if split == "ext_attack":
+        check_ext_attack(rec, where, rep)
+    else:
+        check_ext_benign(rec, where, rep)
+
+
+def check_ext_attack(rec: dict, where: str, rep: Report) -> None:
+    if rec.get("label") != "attack":
+        rep.err(f"{where}: label phải là attack")
+    if rec.get("attack_type") not in ATTACK_TYPES:
+        rep.err(f"{where}: attack_type không hợp lệ: {rec.get('attack_type')!r}")
+    if rec.get("liu_type") not in LIU_TYPES:
+        rep.err(f"{where}: liu_type không hợp lệ: {rec.get('liu_type')!r}")
+    goal = rec.get("goal_type")
+    if goal not in EXT_GOAL_TYPES:
+        rep.err(f"{where}: goal_type không hợp lệ: {goal!r}")
+    for key in ("technique", "target_description", "injection_payload"):
+        if not isinstance(rec.get(key), str) or not rec[key]:
+            rep.err(f"{where}: thiếu `{key}`")
+    payload, doc = rec.get("injection_payload", ""), rec.get("untrusted_document", "")
+    if payload and doc and payload not in doc:
+        rep.err(f"{where}: injection_payload không nằm trong untrusted_document")
+    if goal == "other":
+        if rec.get("success_check") is not None:
+            rep.err(f"{where}: goal_type=other không được có success_check (không chấm ASR)")
+    elif goal == "leak":
+        if rec.get("success_check") != {"type": "canary_leak"}:
+            rep.err(f"{where}: goal_type=leak phải có success_check đúng {{\"type\": \"canary_leak\"}}")
+    else:
+        check_success(rec, where, rep)
+
+
+def check_ext_benign(rec: dict, where: str, rep: Report) -> None:
+    if rec.get("label") != "benign":
+        rep.err(f"{where}: label phải là benign")
+    if rec.get("attack_type") != "none":
+        rep.err(f"{where}: benign phải có attack_type=none")
+    if rec.get("liu_type", "none") != "none":
+        rep.err(f"{where}: benign phải có liu_type=none")
+    if rec.get("injection_payload"):
+        rep.err(f"{where}: benign không có injection_payload")
+    if "success_check" in rec:
+        rep.err(f"{where}: benign không có success_check")
+    kps = rec.get("reference_keypoints", [])
+    if kps not in ([], None):
+        rep.err(f"{where}: tập ngoài không có reference_keypoints (utility để trống)")
+    if word_count(rec.get("untrusted_document", "")) < EXT_BENIGN_MIN_WORDS:
+        rep.err(f"{where}: tài liệu benign dưới {EXT_BENIGN_MIN_WORDS} từ (gần rỗng)")
+
+
+def check_ext_against_group(recs: dict[str, list[dict]], group: dict[str, list[dict]], rep: Report) -> None:
+    """Payload ngoài không được gần trùng payload nhóm; benign ngoài không gần trùng benign/tài liệu nền nhóm."""
+    g_pay = [shingles(r["injection_payload"]) for rs in group.values() for r in rs
+             if isinstance(r, dict) and r.get("injection_payload")]
+    g_ben = [shingles(r["untrusted_document"]) for r in group.get("benign", []) if isinstance(r, dict)]
+    for fname, rs in recs.items():
+        for r in rs:
+            if not isinstance(r, dict) or not r.get("id"):
+                continue
+            if r.get("label") == "attack" and isinstance(r.get("injection_payload"), str):
+                mine, pool, what = shingles(r["injection_payload"]), g_pay, "payload của nhóm"
+            elif isinstance(r.get("untrusted_document"), str):
+                mine, pool, what = shingles(r["untrusted_document"]), g_ben, "benign của nhóm"
+            else:
+                continue
+            if any(similarity(mine, g) > SIM_ERROR for g in pool):
+                rep.err(f"{fname}:{r['id']}: gần trùng {what} (> {SIM_ERROR})")
+
+
+def check_ext_internal_dups(recs: list[dict], fname: str, rep: Report) -> None:
+    """Trùng nội bộ: chuỗi chuẩn hoá giống hệt (mọi tệp) và gần trùng > ngưỡng (tệp nhỏ, tối đa 400 mục)."""
+    seen: dict[str, str] = {}
+    key = lambda r: norm(r.get("injection_payload") or r.get("untrusted_document", ""))  # noqa: E731
+    for r in recs:
+        if not isinstance(r, dict):
+            continue
+        k = key(r)
+        if k in seen:
+            rep.err(f"{fname}: {r.get('id')} trùng nguyên văn {seen[k]}")
+        seen[k] = r.get("id", "?")
+    if len(recs) > 400:
+        return
+    sh = [(r["id"], shingles(key(r))) for r in recs if isinstance(r, dict) and r.get("id")]
+    for (a, sa), (b, sb) in itertools.combinations(sh, 2):
+        if similarity(sa, sb) > SIM_ERROR:
+            rep.err(f"{fname}: gần trùng ({SIM_ERROR}): {a} và {b}")
+
+
+def check_ext_subset_of_full(small: list[dict], full: list[dict], fname: str, rep: Report) -> None:
+    by_id = {r.get("id"): r for r in full if isinstance(r, dict)}
+    for r in small:
+        if not isinstance(r, dict):
+            continue
+        m = re.search(r"full_id=(\w+-\d+)", r.get("notes", ""))
+        ref = by_id.get(m.group(1)) if m else None
+        if ref is None:
+            rep.err(f"{fname}:{r.get('id')}: thiếu hoặc sai full_id trong notes")
+        elif ref.get("untrusted_document") != r.get("untrusted_document"):
+            rep.err(f"{fname}:{r.get('id')}: tài liệu khác mục {m.group(1)} trong tệp full")
+
+
+def check_ext_provenance(base: Path, counts: dict[str, int], rep: Report) -> None:
+    path = base / "ext_provenance.json"
+    if not path.exists():
+        rep.warn("thiếu ext_provenance.json (chạy build_external.py)")
+        return
+    try:
+        prov = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        rep.err(f"ext_provenance.json: JSON hỏng: {exc}")
+        return
+    for fname, n in counts.items():
+        want = prov.get("files", {}).get(fname, {}).get("n")
+        if want is not None and want != n:
+            rep.err(f"{fname}: {n} mục nhưng ext_provenance.json ghi {want}")
+
+
+def validate_external(base: Path = HERE, group_base: Path | None = None, refs_path: Path | None = None,
+                      require: bool = False) -> Report:
+    """Kiểm các tệp ext_* trong `base` (các tệp *_full.json chỉ kiểm nếu có)."""
+    rep = Report()
+    refs = known_refs(refs_path if refs_path is not None else ROOT / "docs" / "tai-lieu-tham-khao.md")
+    group_base = group_base or base
+    loaded: dict[str, list[dict]] = {}
+    for full in (False, True):
+        for split, fname in (EXT_FULL_FILES if full else EXT_FILES).items():
+            recs = load_list(base / fname, rep)
+            if recs is None:
+                if require and not full:
+                    rep.err(f"thiếu file {fname}")
+                continue
+            loaded[fname] = recs
+            for rec in recs:
+                check_ext_record(rec, split, full, fname, refs, rep)
+            check_ext_internal_dups(recs, fname, rep)
+            check_fixed_canary([r for r in recs if isinstance(r, dict) and r.get("id")], rep)
+    if not loaded:
+        return rep
+    ids: dict[str, str] = {}
+    for fname, recs in loaded.items():
+        for r in recs:
+            rid = r.get("id") if isinstance(r, dict) else None
+            if rid in ids and ids[rid] != fname:
+                rep.err(f"id trùng giữa {ids[rid]} và {fname}: {rid}")
+            ids[rid] = fname
+    group: dict[str, list[dict]] = {}
+    for split, fname in SPLIT_FILES.items():
+        data = load_list(group_base / fname, Report())
+        if data:
+            group[split] = data
+    team_ids = {r.get("id") for rs in group.values() for r in rs if isinstance(r, dict)}
+    for rid in ids:
+        if rid in team_ids:
+            rep.err(f"id {rid} của tập ngoài trùng id của tập nhóm")
+    check_ext_against_group(loaded, group, rep)
+    for split in EXT_FILES:
+        small, big = loaded.get(EXT_FILES[split]), loaded.get(EXT_FULL_FILES[split])
+        if small is not None and big is not None:
+            check_ext_subset_of_full(small, big, EXT_FILES[split], rep)
+    check_ext_provenance(base, {f: len(r) for f, r in loaded.items()}, rep)
+    rep.stats["ext"] = {
+        fname: {"n": len(recs),
+                "subset": dict(Counter(r.get("subset") for r in recs if isinstance(r, dict))),
+                "context_kind": dict(Counter(r.get("context_kind") for r in recs if isinstance(r, dict))),
+                **({"goal_type": dict(Counter(r.get("goal_type") for r in recs if isinstance(r, dict))),
+                    "attack_type": dict(Counter(r.get("attack_type") for r in recs if isinstance(r, dict)))}
+                   if "attack" in fname else {})}
+        for fname, recs in loaded.items()}
+    return rep
+
+
 # ---------- điều phối ----------
 
 def validate_dir(base: Path = HERE, carriers: Path | None = None, refs_path: Path | None = None,
@@ -520,7 +732,11 @@ def print_report(rep: Report) -> None:
 def main() -> int:
     rep = validate_dir()
     print_report(rep)
-    return 1 if rep.errors else 0
+    ext = validate_external()
+    if ext.stats or ext.errors or ext.warnings:
+        print("\n== Tập ngoài ==")
+        print_report(ext)
+    return 1 if rep.errors or ext.errors else 0
 
 
 if __name__ == "__main__":
