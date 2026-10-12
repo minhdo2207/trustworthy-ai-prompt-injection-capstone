@@ -80,7 +80,8 @@ bootstrap interval over prompts.
   that exclude zero on hold-out. The 0 successes in 76 hold-out runs correspond to a Wilson upper bound
   of 4.8%, so this is not a guarantee.
 - On untouched benign documents, the false-refusal rate goes 0, 2.4, 4.8, 4.8 and 15.9% along the chain,
-  and latency reaches 1.69 times the baseline with L3 and 2.78 times with L4. L4 stops no further attack.
+  and mean latency (all 84 benign documents) reaches 1.69 times the baseline with L3 and 2.78 times with
+  L4. L4 stops no further attack.
 - L1, tuned most by hand, blocks 98.6% of the training attack runs but 37.6% [35.6, 39.8] of 2,021
   external attacks zero-shot.
 - Limitations: small data written by us, one model, one static task, non-adaptive attacks.
@@ -91,10 +92,9 @@ The full write-up (method, metrics, all tables) is in the report; its LaTeX sour
 
 ```
 analysis/        statistics: Wilson and cluster-bootstrap intervals, result tables
-attack_prompts/  attack and benign data, external data, validation script
+attack_prompts/  attack and benign data, external data, validation script, reference list
 baseline_agent/  the target system (no defense)
 defenses/        L1-L4, the evaluation harness, detection experiments
-docs/            interface contract between components, reference notes
 report/          LaTeX sources of the report and slides
 results/         final runs (results/final) and tuning evidence (results/dev_tuning)
 tests/           offline tests (Ollama is mocked)
@@ -102,7 +102,7 @@ tests/           offline tests (Ollama is mocked)
 
 ## Running
 
-Python 3.13 with the standard library, `requests`, `pandas` and `pytest`; Ollama with `qwen3:8b`,
+Python 3.13 with the standard library, `pandas` and `pytest`; Ollama with `qwen3:8b`,
 `qwen2.5:3b` and `nomic-embed-text`. API keys, if any, go in `.env`, which is git-ignored.
 
 ```bash

@@ -159,7 +159,7 @@ def check_source(rec: dict, where: str, refs: set[str], rep: Report) -> None:
         rep.err(f"{where}: nguồn dataset bắt buộc có url và license")
     ref = src.get("ref", "")
     if ref and refs and ref not in refs:
-        rep.err(f"{where}: source.ref {ref!r} không có trong docs/tai-lieu-tham-khao.md")
+        rep.err(f"{where}: source.ref {ref!r} không có trong attack_prompts/tai-lieu-tham-khao.md")
 
 
 def check_success(rec: dict, where: str, rep: Report) -> None:
@@ -640,7 +640,7 @@ def validate_external(base: Path = HERE, group_base: Path | None = None, refs_pa
                       require: bool = False) -> Report:
     """Kiểm các tệp ext_* trong `base` (các tệp *_full.json chỉ kiểm nếu có)."""
     rep = Report()
-    refs = known_refs(refs_path if refs_path is not None else ROOT / "docs" / "tai-lieu-tham-khao.md")
+    refs = known_refs(refs_path if refs_path is not None else ROOT / "attack_prompts" / "tai-lieu-tham-khao.md")
     group_base = group_base or base
     loaded: dict[str, list[dict]] = {}
     for full in (False, True):
@@ -696,7 +696,7 @@ def validate_dir(base: Path = HERE, carriers: Path | None = None, refs_path: Pat
                  require_all: bool = True) -> Report:
     """Chạy toàn bộ kiểm tra trên thư mục chứa các file prompt; trả về Report."""
     rep = Report()
-    refs = known_refs(refs_path if refs_path is not None else ROOT / "docs" / "tai-lieu-tham-khao.md")
+    refs = known_refs(refs_path if refs_path is not None else ROOT / "attack_prompts" / "tai-lieu-tham-khao.md")
     by_split: dict[str, list[dict]] = {}
     for split, fname in SPLIT_FILES.items():
         recs = load_list(base / fname, rep)
