@@ -5,3 +5,11 @@ venv/
 .env
 .DS_Store
 *.log
+
+# Dữ liệu ngoài: tệp lớn sinh lại được từ dữ liệu thô (attack_prompts/build_external.py)
+attack_prompts/ext_attack_full.json
+attack_prompts/ext_benign_full.json
+results/dev/
+
+# Trọng số model cục bộ (Prompt Guard 2, ProtectAI): tải bằng huggingface_hub, không commit
+models/

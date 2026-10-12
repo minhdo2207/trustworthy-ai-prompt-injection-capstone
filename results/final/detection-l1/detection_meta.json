@@ -1,0 +1,16 @@
+{
+  "created_utc": "2026-10-11T14:29:29+00:00",
+  "argv": "--no-l2 --out results/final/detection-l1",
+  "git_commit": "574f0d586c58427b3c3cb485c0da4f397c7c8538",
+  "n_attack": 2021,
+  "n_benign": 1729,
+  "l1_threshold": 0.6,
+  "l1_seconds": 75.7177732079981,
+  "seed": 0,
+  "n_l2": 150,
+  "max_l2_calls": 0,
+  "data_sha256": {
+    "ext_attack_full.json": "030bcd259ed3a86451298004bc2ab85ceea9a34dfaa6c46c6157953027f1f9ea",
+    "ext_benign_full.json": "2250c0ec598ce5b2b1cec0bcec789843622550759614da0137b1cc4c70bdf448"
+  }
+}

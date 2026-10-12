@@ -1,0 +1,13 @@
+{
+ "frozen_utc": "2026-10-12T10:45:26+00:00",
+ "base_commit": "fde06480d27628c0aeb9eadc802bde44e6ae7ea4",
+ "note": "Ngưỡng PG_THRESHOLDS / PG_THRESHOLDS_STRICT chốt trên train + benign tune TRƯỚC khi chạy 'final' (hold-out, test_indist, dữ liệu ngoài). Chạy final một lần.",
+ "sha256": {
+  "defenses/layer2_refusal_classifier.py": "2ae3d0bd7a238f119963889758d9a77f35db76be99c5aba41a4dd5acf6e7820c",
+  "defenses/eval_promptguard.py": "e084a3d3148674486612cd87d6cf9b9fad1b5c42684fb96be9069c6195d88b5f",
+  "results/promptguard/Llama-Prompt-Guard-2-86M/calibration.json": "fdd8fca974108af332a2c9d6455aaaa4d02b21b75f4f98b3d7084b54536f12ab",
+  "results/promptguard/Llama-Prompt-Guard-2-22M/calibration.json": "c9632fec1fbdd2056208487ef1d235d2550edf3d4a54625068b3452c1fc1ad2c",
+  "results/promptguard/deberta-v3-base-prompt-injection-v2/calibration.json": "e193dced990dae15dcea8e6a33de3bd7f09a7938789ed384c131c02a586fbb02"
+ },
+ "post_freeze_changes": "Sau khi chốt chỉ sửa defenses/eval_promptguard.py: lỗi kiểu dữ liệu khi tổng hợp bảng, cờ --from-items, định dạng ngưỡng, ghi chú. Ngưỡng trong layer2 và các calibration.json không đổi (hash khớp). Điểm hold-out chấm đúng một lần (items.csv)."
+}

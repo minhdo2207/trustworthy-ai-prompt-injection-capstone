@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrrrrr}
+\toprule
+Config & Vai trò & ASR prompt (\%) & Bootstrap 95\% & Giảm vs baseline (pp) & Giảm tương đối (\%) & Tỉ phần của chuỗi đầy đủ (\%) & Giảm biên trong chuỗi (pp) \\
+\midrule
+baseline & đối chiếu & 32.9 & [19.7, 47.4] & - & n/a & n/a & n/a \\
+only\_L1 & chỉ một lớp & 15.8 & [5.3, 28.9] & +17.1 [+5.3, +30.3] & 52.0 & 52.0 & +17.1 \\
+only\_L2 & chỉ một lớp & 13.2 & [2.6, 23.7] & +19.7 [+7.9, +32.9] & 60.0 & 60.0 & +7.9 \\
+only\_L3 & chỉ một lớp & 10.5 & [2.6, 21.1] & +22.4 [+10.5, +35.5] & 68.0 & 68.0 & +7.9 \\
+only\_L4 & chỉ một lớp & 18.4 & [7.9, 31.6] & +14.5 [+2.6, +28.9] & 44.0 & 44.0 & 0.0 \\
+L1+L2+L3+L4 & chuỗi đầy đủ & 0.0 & [0.0, 0.0] & +32.9 [+19.7, +47.4] & 100.0 & n/a & n/a \\
+\bottomrule
+\end{tabular}

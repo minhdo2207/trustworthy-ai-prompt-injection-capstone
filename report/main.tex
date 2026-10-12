@@ -1,0 +1,44 @@
+% !TEX program = xelatex
+% Biên dịch: ./build.sh  (tectonic main.tex). Overleaf: Menu > Compiler = XeLaTeX.
+\documentclass[10pt,a4paper]{article}
+\input{preamble}
+
+\hypersetup{pdftitle={Prompt-Injection Red-Team và phòng thủ nhiều lớp cho một mô hình ngôn ngữ lớn},
+  pdfauthor={Nhóm 4 -- Trustworthy AI},pdfsubject={Báo cáo cuối kỳ}}
+
+% --- Thông tin bìa (sửa tại đây) ------------------------------------------
+\newcommand{\giangvien}{\FILL{tên giảng viên}}
+\newcommand{\truong}{\FILL{trường / khoa}}
+\newcommand{\ngaynop}{Tháng 10 năm 2026}
+\newcommand{\trangthai}{Bản khung: các mục có đánh dấu \textbf{CHƯA CÓ SỐ LIỆU} sẽ được điền sau khi chạy ma trận cuối}
+
+\begin{document}
+
+\pagenumbering{Alph}
+\input{sections/00_bia}
+
+\pagenumbering{roman}
+\setcounter{tocdepth}{1}
+\tableofcontents
+\listoftables
+\listoffigures
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01_gioi_thieu}
+\input{sections/02_lien_quan}
+\input{sections/03_phat_bieu}
+\input{sections/04_phuong_phap}
+\input{sections/05_danh_gia}
+\input{sections/06_ket_luan}
+
+\FloatBarrier
+{\footnotesize\setlength{\bibsep}{1pt}\bibliographystyle{plainnat}
+\bibliography{refs}}
+\addcontentsline{toc}{section}{Tài liệu tham khảo}
+
+\appendix
+\input{sections/appendix_prompts}
+\input{sections/appendix_chitiet}
+
+\end{document}
