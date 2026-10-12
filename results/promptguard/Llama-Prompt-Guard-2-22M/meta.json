@@ -1,0 +1,22 @@
+{
+ "created_utc": "2026-10-12T10:54:37+00:00",
+ "model": "Llama-Prompt-Guard-2-22M",
+ "threshold": 0.002,
+ "threshold_strict": 0.077775,
+ "calibration": "2026-10-12, train n=69 + benign tune n=42, tài liệu gốc: AUC 0.8741 (bootstrap 95% [0.8026, 0.9393]); FPR<=10% -> ngưỡng 0.002, TPR 54/69, FPR 4/42; FPR=0 -> ngưỡng 0.077775, TPR 19/69",
+ "stride": 64,
+ "git_commit": "fde06480d27628c0aeb9eadc802bde44e6ae7ea4",
+ "n_items": 445,
+ "wall_s": 0.0,
+ "pg_ms_per_doc": {
+  "count": 445.0,
+  "mean": 205.6,
+  "std": 522.4,
+  "min": 21.1,
+  "50%": 103.2,
+  "90%": 284.7,
+  "max": 7617.0
+ },
+ "device": "cpu",
+ "note": "chạy MỘT lần với ngưỡng cố định; không chỉnh theo kết quả này"
+}

@@ -1,0 +1,16 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrrrrr}
+\toprule
+Split & Config & Prompt sống/chết & ASR hiệu dụng theo lượt (\%) & Wilson 95\% & ASR hiệu dụng theo prompt (\%) & Bootstrap 95\% & ASR không điều kiện (\%) \\
+\midrule
+train & baseline & 15/54 & 73.3 & [59.0, 84.0] & 73.3 & [60.0, 86.7] & 15.9 \\
+ & L1 & 15/54 & 0.0 & [0.0, 7.9] & 0.0 & [0.0, 0.0] & 0.0 \\
+ & L1+L2 & 15/54 & 0.0 & [0.0, 7.9] & 0.0 & [0.0, 0.0] & 0.0 \\
+ & L1+L2+L3 & 15/54 & 0.0 & [0.0, 7.9] & 0.0 & [0.0, 0.0] & 0.0 \\
+ & L1+L2+L3+L4 & 15/54 & 0.0 & [0.0, 7.9] & 0.0 & [0.0, 0.0] & 0.0 \\
+ & only\_L1 & 15/54 & 0.0 & [0.0, 20.4] & 0.0 & [0.0, 0.0] & 0.0 \\
+ & only\_L2 & 15/54 & 26.7 & [10.9, 52.0] & 26.7 & [6.7, 46.7] & 5.8 \\
+ & only\_L3 & 15/54 & 13.3 & [3.7, 37.9] & 13.3 & [0.0, 33.3] & 4.3 \\
+ & only\_L4 & 15/54 & 26.7 & [10.9, 52.0] & 26.7 & [6.7, 53.3] & 5.8 \\
+\bottomrule
+\end{tabular}

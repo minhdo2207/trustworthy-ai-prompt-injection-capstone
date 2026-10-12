@@ -1,0 +1,23 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrr}
+\toprule
+Chiều & Giá trị & Prompt & Chết & Tỉ lệ chết (\%) \\
+\midrule
+tổng & tất cả & 159 & 127 & 79.9 \\
+attack\_type & code\_switching\_translation & 14 & 13 & 92.9 \\
+attack\_type & direct\_injection & 54 & 53 & 98.1 \\
+attack\_type & indirect\_injection & 49 & 23 & 46.9 \\
+attack\_type & jailbreak\_roleplay & 16 & 13 & 81.3 \\
+attack\_type & many\_shot\_jailbreaking & 12 & 11 & 91.7 \\
+attack\_type & obfuscation & 14 & 14 & 100.0 \\
+liu\_type & combined & 5 & 1 & 20.0 \\
+liu\_type & context\_ignoring & 47 & 42 & 89.4 \\
+liu\_type & escape\_characters & 6 & 1 & 16.7 \\
+liu\_type & fake\_completion & 8 & 8 & 100.0 \\
+liu\_type & naive & 10 & 7 & 70.0 \\
+liu\_type & none & 83 & 68 & 81.9 \\
+goal\_type & integrity & 16 & 4 & 25.0 \\
+goal\_type & leak & 131 & 119 & 90.8 \\
+goal\_type & tool\_action & 12 & 4 & 33.3 \\
+\bottomrule
+\end{tabular}

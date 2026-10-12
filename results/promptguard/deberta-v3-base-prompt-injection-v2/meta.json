@@ -1,0 +1,22 @@
+{
+ "created_utc": "2026-10-12T10:54:38+00:00",
+ "model": "deberta-v3-base-prompt-injection-v2",
+ "threshold": 0.025,
+ "threshold_strict": 0.983907,
+ "calibration": "2026-10-12, train n=69 + benign tune n=42, tài liệu gốc: AUC 0.7602 (bootstrap 95% [0.6743, 0.8402]); FPR<=10% -> ngưỡng 0.025, TPR 34/69, FPR 4/42; FPR=0 -> ngưỡng 0.983907, TPR 27/69",
+ "stride": 64,
+ "git_commit": "fde06480d27628c0aeb9eadc802bde44e6ae7ea4",
+ "n_items": 445,
+ "wall_s": 0.0,
+ "pg_ms_per_doc": {
+  "count": 445.0,
+  "mean": 442.9,
+  "std": 928.9,
+  "min": 60.2,
+  "50%": 220.6,
+  "90%": 618.0,
+  "max": 7734.1
+ },
+ "device": "cpu",
+ "note": "chạy MỘT lần với ngưỡng cố định; không chỉnh theo kết quả này"
+}

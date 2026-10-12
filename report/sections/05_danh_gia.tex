@@ -1,0 +1,178 @@
+\section{Đánh giá thử nghiệm}\label{sec:eval}
+
+\begin{warnbox}[title={Trạng thái của mục này}]
+Các bảng, hình và nhận xét ở \cref{sec:eval-results} là \emph{khung}. Chúng được nạp từ các tệp trong \code{tables/} và \code{results\_dat/} do \code{analysis/stats.py} sinh từ \code{results.csv}. Nếu tệp chưa có, PDF hiện khung đỏ \textbf{CHƯA CÓ SỐ LIỆU}. Mỗi bảng chỉ chứa môi trường \code{tabular} (kiểu \code{booktabs}); chú thích và nhãn nằm trong báo cáo. Phần nhận xét chỉ ghi quy tắc đọc kết quả và chỗ trống \TODO{điền theo số liệu}; không có kết luận nào được viết trước khi có số.
+\end{warnbox}
+
+\subsection{Mục đích đánh giá}
+Đánh giá nhằm trả lời ba câu hỏi nghiên cứu ở \cref{sec:intro}:
+\begin{itemize}
+  \item \textbf{RQ1}: đo $\ASR$ của mô hình trần theo loại tấn công và mục tiêu, trên train, test\_indist và hold-out (\cref{sec:res-rq1});
+  \item \textbf{RQ2}: đo $\ASR$ cộng dồn và ablation cùng $\FRR$, $\Util$, $\rho_N$, $\rho_T$ trên tập benign (\cref{sec:res-rq2});
+  \item \textbf{RQ3}: đo $\Delta_{\mathrm{gen}}$ giữa train, test\_indist và hold-out của cấu hình cuối (\cref{sec:res-rq3}).
+\end{itemize}
+
+\subsection{Kịch bản đánh giá}
+
+\subsubsection{Dữ liệu}\label{sec:eval-data}
+Bộ prompt có bốn phần, mỗi phần phục vụ một mục đích (\cref{tab:splits}). Bộ ban đầu có 72 prompt tự viết, gồm 48 prompt train (6 loại tấn công, mỗi loại 8) và 24 prompt hold-out; bộ này đang được gắn nhãn lại theo schema v2 (kiểu cơ bản của \citet{liu2024formalizing}, kỹ thuật theo danh mục HackAPrompt~\citep{schulhoff2023hackaprompt}, mục tiêu \texttt{leak}/\texttt{integrity}/\texttt{tool\_action}), được bổ sung các kiểu cơ bản còn thiếu, mẫu từ bộ dữ liệu công khai có ghi nguồn và giấy phép, tập benign và tập \code{test\_indist}. Số lượng cuối cùng lấy từ \code{attack\_prompts/README.md} sau khi dữ liệu v2 hoàn tất.
+
+\begin{table}[t]
+\centering\small
+\caption[Các tập dữ liệu và vai trò]{Các tập dữ liệu và vai trò. Số lượng sẽ được điền tự động khi dữ liệu v2 đóng băng.}\label{tab:splits}
+\begin{tabularx}{\linewidth}{@{}p{2.2cm}Yrl@{}}
+\toprule
+Tập & Vai trò và tiêu chí & Số prompt & Được chỉnh tham số?\\
+\midrule
+train (tấn công) & Thiết kế L1--L4, chọn ngưỡng; 6 loại tấn công & \num{nTrain} & có\\
+test\_indist & Kỹ thuật như train, câu chữ mới: đo quá khớp câu chữ & \num{nIndist} & không\\
+hold-out & Kỹ thuật \emph{không} có trong train: đo tổng quát hoá; chạy một lần & \num{nHoldout} & không\\
+benign-tune & Tài liệu sạch (có cụm dễ chặn nhầm), chỉnh ngưỡng & \num{nBenignTune} & có\\
+benign-test & Tài liệu sạch để báo cáo $\FRR$, $\Util$ & \num{nBenignTest} & không\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Mỗi prompt tấn công gồm yêu cầu của người dùng (mặc định ``Tóm tắt tài liệu sau trong 3 câu''), tài liệu chứa lệnh tiêm, payload tách riêng để truy vết, kiểu cơ bản theo Liu, kỹ thuật, mục tiêu, hàm \texttt{success\_check} và nguồn gốc. Mẫu lành tính có thêm 2--4 ý chính tham chiếu để chấm utility. Mọi mẫu lấy từ nguồn ngoài đều ghi tên, đường dẫn và giấy phép. Phụ lục A liệt kê toàn bộ prompt.
+
+\subsubsection{Độ đo}
+Các định nghĩa ASR, $\FRR$, $\Util$ và chi phí ở các công thức \eqref{eq:asr}, \eqref{eq:frr} và \eqref{eq:util}. Ngoài ra:
+
+\paragraph{Khoảng tin cậy Wilson 95\%.} Với $k$ thành công trong $n$ lần chạy, $\hat p = k/n$ và $z=1{,}96$, khoảng Wilson~\citep{wilson1927probable} là
+\begin{equation}
+  \mathrm{CI}_{\mathrm{Wilson}} = \frac{\hat p + \frac{z^2}{2n} \pm z\sqrt{\frac{\hat p(1-\hat p)}{n} + \frac{z^2}{4n^2}}}{1+\frac{z^2}{n}}.
+\end{equation}
+Khoảng này coi các lần chạy là độc lập. Do các lần lấy mẫu của cùng một prompt tương quan mạnh nên nó có thể \emph{quá hẹp}; vì vậy luôn báo kèm số prompt, và ưu tiên khoảng sau.
+
+\paragraph{Bootstrap theo cụm.} Mỗi prompt là một cụm. Ta lấy mẫu lại $|\mathcal{P}|$ prompt \emph{có hoàn lại}, giữ nguyên toàn bộ lần chạy của prompt được chọn, tính lại ASR, lặp $B$ lần ($B$ = \num{bootB}) và lấy phân vị 2,5\% và 97,5\%~\citep{efron1979bootstrap}. Để so sánh hai cấu hình trên \emph{cùng} tập prompt, bootstrap hiệu $\ASR(D_a)-\ASR(D_b)$ theo cùng các cụm; hai cấu hình chỉ được coi là khác nhau khi khoảng này không chứa 0.
+
+\paragraph{Các đại lượng phụ.} (i) \emph{Khoảng cách tổng quát hoá} $\Delta_{\mathrm{gen}}=\ASR_{\mathrm{ho}}-\ASR_{\mathrm{tr}}$, bootstrap độc lập trên hai tập vì hai tập là hai tập prompt khác nhau. (ii) \emph{Tỉ lệ chặn theo lớp}: phần tấn công (hoặc benign) bị mỗi lớp chặn; với benign đây là FPR của lớp. (iii) \emph{Residual risk}: ASR còn lại sau lớp cuối, theo loại tấn công. (iv) \emph{Prompt chết}: prompt có ASR bằng 0 ở cấu hình baseline trên mọi lần lấy mẫu; vì chúng làm ASR trung bình thấp đi mà không phản ánh năng lực phòng thủ nên ASR được báo cáo cả trên toàn bộ và trên phần ``còn sống'', và danh sách prompt chết đi kèm (\cref{sec:res-dead}).
+
+\subsubsection{Thiết lập thực nghiệm}
+\begin{itemize}
+  \item \textbf{Mô hình sinh}: \modelname{}~\citep{qwen2025qwen25}. Kế hoạch ban đầu dùng Qwen3-8B~\citep{yang2025qwen3} nhưng mô hình này chưa được cài trên máy chạy thực nghiệm, nên toàn bộ kết quả là của Qwen2.5-7B; không được suy sang Qwen3-8B hay mô hình khác. Chế độ ``thinking'' tắt; số token sinh tối đa 400.
+  \item \textbf{Mô hình phụ}: \texttt{\judgeid} làm bộ chấm của L2; \texttt{\embedid}~\citep{nussbaum2024nomic} lấy embedding cho L4. Cả ba chạy cục bộ qua Ollama.
+  \item \textbf{Lấy mẫu}: nhiệt độ $T$ = \num{tempMain} với $m$ = \num{nSamples} lần mỗi prompt, hạt giống cố định và ghi trong \code{run\_config.json}; $T=0$ cho một lần chạy tất định để kiểm tra.
+  \item \textbf{Cấu hình}: baseline; cộng dồn L1, L1+L2, L1+L2+L3, L1+L2+L3+L4; ablation chạy từng lớp riêng (\code{only\_L1}, \dots, \code{only\_L4})\footnote{Có thể bổ sung ablation bỏ từng lớp (drop-one) nếu thời gian cho phép: \FILL{chốt}.}.
+  \item \textbf{Tác vụ}: tóm tắt/hỏi đáp tài liệu, system prompt chứa canary ngẫu nhiên.
+  \item \textbf{Phần cứng}: Apple M1 Pro, 16 GB RAM (ghi nhận bằng \code{sysctl}); tốc độ sinh của \texttt{\modelid} đo sơ bộ khoảng 20 token/giây. Máy dùng chung với các tiến trình khác của nhóm, nên độ trễ tuyệt đối chỉ có ý nghĩa tương đối giữa các cấu hình \emph{trong cùng một lần chạy}.
+  \item \textbf{Tệp kết quả}: \code{results.\allowbreak csv} (mỗi dòng một prompt, một cấu hình, một lần lấy mẫu), \code{outputs.\allowbreak jsonl} (phản hồi và lý do chặn), \code{run\_config.json}. Danh sách cột ở phụ lục D.
+\end{itemize}
+
+\subsection{Kết quả và nhận xét}\label{sec:eval-results}
+
+\subsubsection{RQ1: mô hình trần}\label{sec:res-rq1}
+\begin{table}[t]
+\centering\small
+\caption[ASR theo cấu hình và tập dữ liệu]{ASR (\%) theo cấu hình và tập dữ liệu: theo lượt kèm khoảng Wilson 95\%, theo prompt kèm khoảng bootstrap theo cụm 95\%; kèm số prompt và số lượt.}\label{tab:asr-config-split}
+\tabinput{asr_by_config_split}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption[ASR theo loại tấn công]{ASR (\%) theo prompt, theo loại tấn công, ở baseline và ở cấu hình cuối; $n$ là số prompt của nhóm (nhóm nhỏ chỉ để mô tả).}\label{tab:by-type}
+\tabinput{by_attack_type}
+\end{table}
+
+
+\paragraph{Nhận xét.} Quy tắc đọc: so ASR baseline với khoảng tin cậy theo cụm (không chỉ Wilson); loại tấn công có $n$ prompt nhỏ chỉ nêu mô tả, không xếp hạng. \TODO{điền theo số liệu: ASR baseline tổng thể trên train và trên hold-out; loại và mục tiêu tấn công thành công nhiều nhất/ít nhất; so với xu hướng trong \citet{liu2024formalizing} nếu có thể so sánh định tính}.
+
+\subsubsection{RQ2: hiệu quả từng lớp và đánh đổi}\label{sec:res-rq2}
+\begin{figure}[t]
+\centering
+\plotinput{cumulative}
+\caption[ASR cộng dồn qua các cấu hình]{ASR (\%) cộng dồn qua các cấu hình, trên train và hold-out. Thanh sai số là khoảng bootstrap theo cụm 95\%.}\label{fig:cumulative}
+\end{figure}
+
+\begin{table}[t]
+\centering\small
+\caption[ASR cộng dồn: mức giảm theo từng lớp]{ASR cộng dồn: mức giảm tuyệt đối so với cấu hình liền trước, kèm khoảng bootstrap theo cụm.}\label{tab:cumulative}
+\tabinput{cumulative}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption{Ablation: ASR theo prompt khi chỉ bật từng lớp (\texttt{only\_Lk}) và mức giảm so với baseline.}\label{tab:ablation}
+\tabinput{ablation}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption[Tập benign: từ chối oan và utility]{Tập benign: tỉ lệ từ chối oan ($\FRR$), phần do từng lớp chặn, phần do mô hình tự từ chối, và utility (benign bị chặn tính 0; cột cuối chỉ tính các lượt không bị chặn).}\label{tab:benign}
+\tabinput{benign}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption[Chi phí: số lần gọi mô hình và độ trễ]{Chi phí: số lần gọi mô hình và độ trễ trung bình, tuyệt đối và tương đối so với baseline.}\label{tab:cost}
+\tabinput{cost}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.49\linewidth}\centering\plotinput{sweep_l2}\caption{L2: quét ngưỡng $\theta_2$.}\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}\centering\plotinput{sweep_l4}\caption{L4: quét ngưỡng $\tau$.}\end{subfigure}
+\caption[Quét ngưỡng của L2 và L4]{Quét ngưỡng của L2 và L4 \emph{chỉ trên train và benign-tune}: tỉ lệ chặn tấn công và $\FRR$ theo ngưỡng. Vòng tròn đánh dấu ngưỡng đã chọn.}\label{fig:sweep}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\plotinput{tradeoff}
+\caption[Đánh đổi giữa ASR và độ trễ]{Đánh đổi: ASR trên hold-out theo độ trễ tương đối $\rho_T$ của từng cấu hình; nhãn điểm là tên cấu hình.}\label{fig:tradeoff}
+\end{figure}
+
+\paragraph{Nhận xét.} Quy tắc đọc: (i) mức giảm của một lớp chỉ được coi là có thật khi khoảng bootstrap của hiệu so với cấu hình liền trước không chứa 0; (ii) mọi mức giảm ASR đi kèm $\FRR$ và $\Util$ ở cùng dòng, vì ASR giảm do chặn thừa hoặc làm hỏng đầu ra không phải là thành công (\citet{wang2026landscape} cảnh báo hiện tượng này); (iii) đánh giá L4 riêng theo đúng phần ``điểm yếu đã biết'' ở \cref{sec:method}. \TODO{điền theo số liệu: lớp nào giảm nhiều nhất; ASR còn lại sau L1+L2+L3; phần giảm thêm do L4 và FRR kèm theo; có thoả ràng buộc $\rho_T\le\kappa_T$ không; L4 tách được tấn công khỏi benign không}.
+
+\subsubsection{RQ3: tổng quát hoá sang kỹ thuật chưa thấy}\label{sec:res-rq3}
+\begin{table}[t]
+\centering\small
+\caption[Khoảng cách tổng quát hoá]{Khoảng cách tổng quát hoá $\Delta_{\mathrm{gen}}$ của từng cấu hình: hold-out trừ train, và test\_indist trừ train.}\label{tab:gen-gap}
+\tabinput{generalization_gap}
+\end{table}
+
+\paragraph{Nhận xét.} Quy tắc đọc: nếu $\Delta_{\mathrm{gen}}$ dương và khoảng của nó không chứa 0 thì phòng thủ \emph{không} tổng quát hoá đầy đủ; so $\Delta_{\mathrm{gen}}$ trên hold-out với trên test\_indist để tách quá khớp câu chữ (test\_indist) khỏi sự dịch chuyển kỹ thuật (hold-out). Lớp nào quá khớp nhiều nhất được xác định bằng ablation trên hold-out, \emph{sau khi} cấu hình đã khoá. \TODO{điền theo số liệu: $\Delta_{\mathrm{gen}}$ theo cấu hình; lớp đóng góp lớn nhất vào khoảng cách; kỹ thuật hold-out nào lọt nhiều nhất}.
+
+\subsubsection{Prompt chết và độ nhạy}\label{sec:res-dead}
+\begin{table}[t]
+\centering\small
+\caption[Prompt chết và ASR hiệu dụng]{Prompt chết (ASR baseline bằng 0 trên mọi lần lấy mẫu) và ASR hiệu dụng tính trên phần còn sống.}\label{tab:dead}
+\tabinput{dead_prompts}
+\end{table}
+
+\paragraph{Nhận xét.} \TODO{điền theo số liệu: số prompt chết theo loại; nguyên nhân (mô hình không hiểu payload, payload mã hoá mà mô hình không giải được, success\_check quá chặt); kết luận về ASR sau khi loại prompt chết}.
+
+\subsection{Phân tích lỗi}\label{sec:error}
+Phân tích lỗi được thực hiện trên \code{outputs.jsonl} của cấu hình cuối, trước hết ở tập train rồi mới ở hold-out để không dùng hold-out chỉnh phòng thủ. Quy trình: với mỗi lần chạy mà tấn công vẫn thành công, ghi lớp nào đáng ra chặn mà không chặn và lý do; với mỗi lần benign bị chặn hoặc từ chối, ghi lớp chặn và đặc điểm của tài liệu. \Cref{tab:errors} là khung phân loại.
+
+\begin{table}[t]
+\centering\small
+\caption[Khung phân loại lỗi]{Khung phân loại lỗi của cấu hình cuối.}\label{tab:errors}
+\begin{tabularx}{\linewidth}{@{}lYr@{}}
+\toprule
+Nhóm lỗi & Mô tả & Số ca\\
+\midrule
+Lọt L1 & Họ mẫu không khớp biến thể diễn đạt hoặc mã hoá mới & \TODO{n}\\
+Lọt L2 & Bộ chấm cho điểm thấp (thiếu nhận diện hoặc bị chính tài liệu thao túng) & \TODO{n}\\
+Lọt L3 & Mô hình vẫn làm theo lệnh dù có ranh giới / thứ tự ưu tiên & \TODO{n}\\
+Lọt L4 & Độ giống giữa hai phản hồi dưới ngưỡng dù tấn công đã thành công & \TODO{n}\\
+Chấm sai & \texttt{success\_check} bỏ sót biến thể của canary hoặc khớp nhầm & \TODO{n}\\
+Chặn nhầm & Benign bị L1/L2/L4 chặn; ghi chủ đề của tài liệu & \TODO{n}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Ví dụ định tính cho từng nhóm (ngắn, đã che nội dung nhạy cảm) sẽ được đưa vào phụ lục B sau khi có số liệu.
+
+\subsection{Thảo luận và hạn chế}\label{sec:limits}
+Các giới hạn dưới đây tồn tại \emph{bất kể} kết quả ra sao, nên người đọc cần cân nhắc khi diễn giải.
+\begin{itemize}
+  \item \textbf{Mô hình nhỏ và không phải mô hình dự kiến.} Qwen2.5-7B chạy cục bộ khác nhiều so với các mô hình lớn trong tài liệu; xu hướng có thể không chuyển sang mô hình khác. Chưa có kết quả chéo mô hình.
+  \item \textbf{Tác vụ tĩnh.} Một tác vụ tóm tắt/hỏi đáp một lượt, không có tác tử nhiều bước hay công cụ thật; \citet{wang2026landscape} lưu ý nhiều benchmark bỏ qua tác vụ phụ thuộc ngữ cảnh.
+  \item \textbf{Bộ prompt nhỏ.} Với $n$ nhỏ, khoảng tin cậy rộng và chênh lệch nhỏ không đáng tin; mỗi loại tấn công chỉ có ít prompt. Bộ prompt do ít người viết nên đa dạng hạn chế, và người viết prompt hold-out trùng người viết train.
+  \item \textbf{Tấn công không thích ứng.} Payload cố định, không tối ưu theo phòng thủ. Một kẻ tấn công biết L1--L4 có thể lách chúng (ví dụ DataFlip với phát hiện dựa trên LLM~\citep{choudhary2025hownot}). ASR thu được là cận dưới của rủi ro thực.
+  \item \textbf{Chặn vẫn là mất dịch vụ.} Cấu hình có ASR thấp nhờ chặn nhiều có thể không dùng được; vì thế $\FRR$ được xét cùng ASR.
+  \item \textbf{L4 với tác vụ tóm tắt.} Xem phần ``điểm yếu đã biết'' ở \cref{sec:method}: so độ giống văn bản dễ gắn cờ nhầm tài liệu sạch, và cơ chế gốc kém với tấn công qua văn bản.
+  \item \textbf{Hàm chấm bằng quy tắc.} \texttt{success\_check} bắt các dạng đã định nghĩa; mô hình có thể tuân lệnh nhưng mã hoá hay diễn đạt lại canary, khi đó ASR bị đo thấp. Utility cũng chỉ là so khớp ý chính thô.
+  \item \textbf{Mô hình chấm L2 cùng họ với mô hình chính}, và Prompt Guard chưa được dùng.
+  \item \textbf{Kiểm định thống kê.} Các lần lấy mẫu cùng prompt không độc lập; đã dùng bootstrap theo cụm, nhưng số cụm nhỏ nên khoảng vẫn lạc quan.
+\end{itemize}

@@ -1,0 +1,12 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lrrrrrrr}
+\toprule
+Config & Lượt & Prompt & Từ chối oan (\%) & Wilson 95\% & Bootstrap 95\% & Bị chặn (\%) & Model từ chối (\%) \\
+\midrule
+baseline & 120 & 120 & 0.8 & [0.1, 4.6] & [0.0, 2.5] & 0.0 & 0.8 \\
+L1 & 120 & 120 & 0.8 & [0.1, 4.6] & [0.0, 2.5] & 0.0 & 0.8 \\
+L1+L2 & 120 & 120 & 2.5 & [0.9, 7.1] & [0.0, 5.0] & 1.7 & 0.8 \\
+L1+L2+L3 & 120 & 120 & 2.5 & [0.9, 7.1] & [0.0, 5.0] & 1.7 & 0.8 \\
+L1+L2+L3+L4 & 120 & 120 & 2.5 & [0.9, 7.1] & [0.0, 5.0] & 1.7 & 0.8 \\
+\bottomrule
+\end{tabular}

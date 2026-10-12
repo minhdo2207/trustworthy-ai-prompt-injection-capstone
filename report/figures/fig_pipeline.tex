@@ -1,0 +1,26 @@
+\begin{tikzpicture}[
+  box/.style={draw=black!70,rounded corners=2pt,minimum height=1.0cm,minimum width=1.65cm,align=center,font=\footnotesize\sffamily,fill=blue!6},
+  lay/.style={box,fill=blue!12,draw=blue!55!black,thick},
+  mod/.style={box,fill=green!12,draw=green!40!black,thick,minimum width=1.9cm},
+  inp/.style={box,fill=black!5,minimum width=1.5cm},
+  arr/.style={-{Stealth[length=2.2mm]},thick},
+  barr/.style={-{Stealth[length=2.2mm]},thick,dashed,red!65!black},
+  note/.style={draw=black!45,dashed,rounded corners=2pt,font=\scriptsize\sffamily,align=center,inner sep=3pt}]
+\node[inp] (in) at (0.8,0) {Đầu vào\\[-1pt]$s_t,\ \tilde{x}$};
+\node[lay] (l1) at (3.0,0) {\textbf{L1}\\lọc đầu vào};
+\node[lay] (l2) at (5.15,0) {\textbf{L2}\\bộ phân loại};
+\node[lay] (l3) at (7.3,0) {\textbf{L3}\\tách chỉ dẫn/\\dữ liệu};
+\node[mod] (f) at (9.65,0) {\textbf{Mô hình} $f$\\{\scriptsize (lần gọi 1)}};
+\node[lay] (l4) at (12.0,0) {\textbf{L4}\\nhất quán};
+\node[inp] (out) at (14.05,0) {Đầu ra\\$o$};
+\foreach \a/\b in {in/l1,l1/l2,l2/l3,l3/f,f/l4,l4/out} \draw[arr] (\a) -- (\b);
+\node[draw=red!60!black,fill=red!8,rounded corners=2pt,font=\footnotesize\sffamily,align=center,minimum height=0.9cm] (bot) at (7.3,-2.5) {Chặn: trả câu từ chối $\bot$\\{\scriptsize (L1, L2: không gọi mô hình)}};
+\draw[barr] (l1.south) -- (3.0,-1.15) -| ([xshift=-0.9cm]bot.north);
+\draw[barr] (l2.south) -- (5.15,-1.15) -| ([xshift=-0.3cm]bot.north);
+\draw[barr] (l4.south) -- (12.0,-1.15) -| ([xshift=1.0cm]bot.north);
+\node[note] (add) at (7.3,2.05) {$\sigma_+$: thêm vào system prompt\\$u_+$: nhắc lại sau dữ liệu};
+\draw[arr,black!60] (l3.north) -- (add.south);
+\draw[arr,black!60] (add.east) -| (f.north);
+\node[note] (can) at (12.2,2.05) {canary $k$ nằm trong $\sigma$,\\sinh ngẫu nhiên mỗi lần chạy};
+\draw[-{Stealth[length=2mm]},black!45] (can.south west) -- (f.north east);
+\end{tikzpicture}

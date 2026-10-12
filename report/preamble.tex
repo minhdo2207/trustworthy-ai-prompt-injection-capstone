@@ -1,0 +1,172 @@
+% ---------------------------------------------------------------------------
+% preamble.tex --- gói, phông, macro dùng chung cho toàn báo cáo.
+% Biên dịch bằng XeLaTeX/tectonic (khuyến nghị) hoặc pdfLaTeX (nhánh iftex).
+% ---------------------------------------------------------------------------
+\usepackage[a4paper,top=2.3cm,bottom=2.3cm,left=2.4cm,right=2.3cm,headheight=14pt]{geometry}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T5]{fontenc}
+  \usepackage{tgtermes}
+  \usepackage{tgheros}
+  \usepackage[scale=0.9]{tgcursor}
+\else
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Ligatures=TeX,Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+  \setsansfont{texgyreheros}[Ligatures=TeX,Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+  \setmonofont{texgyrecursor}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic,Scale=MatchLowercase]
+\fi
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[table]{xcolor}
+\usepackage{booktabs,tabularx,array,longtable,multirow}
+\usepackage{adjustbox}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[section]{placeins}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds,decorations.pathreplacing}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[most]{tcolorbox}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=green!35!black,urlcolor=blue!50!black,unicode=true,plainpages=false,pdfpagelabels]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\makeatletter\def\theHALG@line{\thealgorithm.\arabic{ALG@line}}\makeatother
+
+% --- Nhãn tiếng Việt ----------------------------------------------------
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh mục hình}
+\renewcommand{\listtablename}{Danh mục bảng}
+\renewcommand{\appendixname}{Phụ lục}
+\renewcommand{\refname}{Tài liệu tham khảo}
+\floatname{algorithm}{Thuật toán}
+\renewcommand{\algorithmicrequire}{\textbf{Đầu vào:}}
+\renewcommand{\algorithmicensure}{\textbf{Đầu ra:}}
+\renewcommand{\algorithmicif}{\textbf{nếu}}
+\renewcommand{\algorithmicthen}{\textbf{thì}}
+\renewcommand{\algorithmicelse}{\textbf{ngược lại}}
+\renewcommand{\algorithmicfor}{\textbf{với}}
+\renewcommand{\algorithmicforall}{\textbf{với mọi}}
+\renewcommand{\algorithmicdo}{\textbf{thực hiện}}
+\renewcommand{\algorithmicwhile}{\textbf{trong khi}}
+\renewcommand{\algorithmicreturn}{\textbf{trả về}}
+\renewcommand{\algorithmicend}{\textbf{kết thúc}}
+\crefname{figure}{Hình}{Hình}
+\crefname{table}{Bảng}{Bảng}
+\crefname{section}{mục}{mục}
+\crefname{subsection}{mục}{mục}
+\crefname{algorithm}{Thuật toán}{Thuật toán}
+\crefname{equation}{công thức}{công thức}
+\crefname{appendix}{Phụ lục}{Phụ lục}
+\Crefname{section}{Mục}{Mục}
+\Crefname{subsection}{Mục}{Mục}
+\Crefname{equation}{Công thức}{Công thức}
+
+% --- Bố cục chung ---------------------------------------------------------
+\setlist{itemsep=2pt,topsep=3pt,parsep=0pt}
+\emergencystretch=3em
+\setstretch{1.0}
+\makeatletter
+\renewcommand\normalsize{\@setfontsize\normalsize{10.4pt}{12.5pt}%
+  \abovedisplayskip 7\p@ \@plus2\p@ \@minus4\p@
+  \abovedisplayshortskip \z@ \@plus3\p@
+  \belowdisplayshortskip 4\p@ \@plus3\p@ \@minus3\p@
+  \belowdisplayskip \abovedisplayskip
+  \let\@listi\@listI}
+\renewcommand\small{\@setfontsize\small{9.5pt}{11.5pt}%
+  \abovedisplayskip 6\p@ \@plus2\p@ \@minus3\p@
+  \belowdisplayskip \abovedisplayskip
+  \abovedisplayshortskip \z@ \@plus2\p@ \belowdisplayshortskip 3\p@ \@plus2\p@}
+\makeatother
+\setlength{\parindent}{1.1em}
+\setlength{\parskip}{2pt}
+\setcounter{tocdepth}{2}
+\setlength{\cftbeforesecskip}{3pt}\setlength{\cftbeforesubsecskip}{0pt}
+\setlength{\cftbeforetabskip}{1pt}\setlength{\cftbeforefigskip}{1pt}
+\renewcommand{\cftsecfont}{\small\bfseries}\renewcommand{\cftsecpagefont}{\small\bfseries}
+\renewcommand{\cftsubsecfont}{\small}\renewcommand{\cftsubsecpagefont}{\small}
+\renewcommand{\cfttabfont}{\small}\renewcommand{\cftfigfont}{\small}
+\renewcommand{\cfttabpagefont}{\small}\renewcommand{\cftfigpagefont}{\small}
+\setlength{\cfttabindent}{0pt}\setlength{\cftfigindent}{0pt}
+\setlength{\cfttabnumwidth}{2em}\setlength{\cftfignumwidth}{2em}
+\titleformat{\section}{\Large\bfseries\sffamily}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\sffamily}{\thesubsection.}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\sffamily}{\thesubsubsection.}{0.6em}{}
+\titlespacing*{\section}{0pt}{16pt}{6pt}
+\titlespacing*{\subsection}{0pt}{11pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\sffamily Trustworthy AI --- Báo cáo cuối kỳ (Nhóm 4)}
+\fancyhead[R]{\small\sffamily Prompt-Injection Red-Team \& Layered Defense}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\arraystretch}{1.2}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\captionsetup{font=small,labelfont={bf,sf},labelsep=period,skip=5pt}
+\captionsetup[table]{position=top,aboveskip=4pt,belowskip=4pt}
+\captionsetup[figure]{position=bottom}
+\pgfplotsset{every axis/.append style={font=\small,tick label style={font=\footnotesize},label style={font=\small},legend style={font=\footnotesize}}}
+
+% --- Định lý/định nghĩa ---------------------------------------------------
+\theoremstyle{definition}
+\newtheorem{definition}{Định nghĩa}
+\newtheorem{assumption}{Giả định}
+
+% --- Macro nội dung ---------------------------------------------------------
+\let\origus\_
+\renewcommand{\_}{\origus\hspace{0pt}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\modelid}{qwen2.5:7b}
+\newcommand{\modelname}{\texttt{qwen2.5:7b} qua Ollama}
+\newcommand{\judgeid}{qwen2.5:3b}
+\newcommand{\embedid}{nomic-embed-text}
+\newcommand{\Lone}{\textsf{L1}}
+\newcommand{\Ltwo}{\textsf{L2}}
+\newcommand{\Lthree}{\textsf{L3}}
+\newcommand{\Lfour}{\textsf{L4}}
+\newcommand{\ASR}{\mathrm{ASR}}
+\newcommand{\FRR}{\mathrm{FRR}}
+\newcommand{\Util}{\mathrm{U}}
+\newcommand{\concat}{\mathbin{\oplus}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% Số liệu CHƯA CÓ phải hiện rõ trong PDF; không bao giờ điền số đoán.
+\newcommand{\TODO}[1]{{\color{red!70!black}\textbf{[CHƯA CÓ SỐ LIỆU: #1]}}}
+% Thông tin hành chính cần người nộp điền (không phải số liệu thực nghiệm).
+\newcommand{\FILL}[1]{{\color{orange!75!black}\textbf{[điền: #1]}}}
+
+% Số trong văn bản: lấy từ tables/numbers.tex (do analysis/stats.py sinh) nếu có.
+\newcommand{\setnum}[2]{\expandafter\gdef\csname numval@#1\endcsname{#2}}
+\newcommand{\num}[1]{\ifcsname numval@#1\endcsname\csname numval@#1\endcsname\else\TODO{\detokenize{#1}}\fi}
+\IfFileExists{tables/numbers.tex}{\input{tables/numbers.tex}}{}
+
+% Bảng/hình kết quả: nạp tệp nếu đã sinh, ngược lại hiện khung "CHƯA CÓ SỐ LIỆU".
+\newcommand{\placeholderbox}[2]{%
+  \begin{center}\fcolorbox{red!60!black}{red!4}{\parbox{0.9\linewidth}{\centering\footnotesize\vspace{2pt}
+  \textbf{\textcolor{red!70!black}{CHƯA CÓ SỐ LIỆU}} --- #1 chưa được sinh. #2\vspace{2pt}}}\end{center}}
+\newcommand{\tabinput}[1]{%
+  \IfFileExists{tables/#1.tex}{\adjustbox{max width=\linewidth}{\input{tables/#1.tex}}}%
+  {\placeholderbox{Bảng \texttt{\detokenize{tables/#1.tex}}}{Chạy \texttt{python analysis/stats.py} sau khi có \texttt{results.csv}.}}}
+\newcommand{\plotinput}[1]{%
+  \IfFileExists{results_dat/#1.dat}{\input{figures/plot_#1.tex}}%
+  {\placeholderbox{Dữ liệu \texttt{\detokenize{results_dat/#1.dat}}}{Hình sẽ được vẽ bằng \texttt{pgfplots} khi tệp này tồn tại.}}}
+
+% Hộp ví dụ prompt/văn bản thô
+\newtcolorbox{examplebox}[1][]{enhanced,breakable,before upper=\raggedright,colback=black!3,colframe=black!45,
+  boxrule=0.4pt,arc=1.5pt,left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\sffamily\small\bfseries,#1}
+\newtcolorbox{notebox}[1][]{enhanced,breakable,colback=blue!4,colframe=blue!45!black,
+  boxrule=0.4pt,arc=1.5pt,left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\sffamily\small\bfseries,#1}
+\newtcolorbox{warnbox}[1][]{enhanced,breakable,colback=orange!6,colframe=orange!70!black,
+  boxrule=0.4pt,arc=1.5pt,left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\sffamily\small\bfseries,#1}
