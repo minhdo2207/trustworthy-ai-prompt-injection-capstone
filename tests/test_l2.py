@@ -300,6 +300,7 @@ def test_promptguard_backend_uses_max_window_and_own_threshold(monkeypatch, tmp_
     monkeypatch.setenv("CAPSTONE_L2_BACKEND", "promptguard")
     monkeypatch.setenv("CAPSTONE_PROMPTGUARD_PATH", str(tmp_path))
     monkeypatch.setattr(L2, "PG_THRESHOLDS", {tmp_path.name: 0.3})
+    monkeypatch.setattr(L2, "promptguard_available", lambda: (True, str(tmp_path)))   # không cần torch/transformers
     monkeypatch.setattr(L2, "promptguard_scores", lambda doc: ([0.01, 0.35, 0.02], 5.0))
     install(monkeypatch)          # judge không được gọi
     r = L2.check("t", "doc")
