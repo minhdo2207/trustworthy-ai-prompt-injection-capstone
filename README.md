@@ -92,10 +92,9 @@ The full write-up (method, metrics, all tables) is in the report; its LaTeX sour
 
 ```
 analysis/        statistics: Wilson and cluster-bootstrap intervals, result tables
-attack_prompts/  attack and benign data, external data, validation script
+attack_prompts/  attack and benign data, external data, validation script, reference list
 baseline_agent/  the target system (no defense)
 defenses/        L1-L4, the evaluation harness, detection experiments
-docs/            interface contract between components, reference notes
 report/          LaTeX sources of the report and slides
 results/         final runs (results/final) and tuning evidence (results/dev_tuning)
 tests/           offline tests (Ollama is mocked)

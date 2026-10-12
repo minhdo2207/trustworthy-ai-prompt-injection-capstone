@@ -369,7 +369,7 @@ def mutate(built, fname, fn):
     ("ext_attack_prompts.json", lambda d: d[0].update(goal_type="leak", success_check={"type": "contains", "value": "x"}),
      "canary_leak"),
     ("ext_attack_prompts.json", lambda d: d[0]["source"].update(license=""), "bắt buộc có url và license"),
-    ("ext_attack_prompts.json", lambda d: d[0]["source"].update(ref="D99"), "không có trong docs"),
+    ("ext_attack_prompts.json", lambda d: d[0]["source"].update(ref="D99"), "không có trong attack_prompts"),
     ("ext_attack_prompts.json", lambda d: d[0].update(injection_payload="không nằm trong tài liệu xyz"),
      "không nằm trong untrusted_document"),
     ("ext_attack_prompts.json", lambda d: d[0].update(id="TR-001"), "id phải dạng"),
