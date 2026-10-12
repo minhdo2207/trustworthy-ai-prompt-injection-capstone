@@ -1,0 +1,33 @@
+split,dimension,value,n_prompts,n_dead,dead_rate
+all,tổng,tất cả,69,54,0.782608695652174
+all,attack_type,code_switching_translation,8,8,1.0
+all,attack_type,direct_injection,9,9,1.0
+all,attack_type,indirect_injection,27,14,0.5185185185185185
+all,attack_type,jailbreak_roleplay,9,7,0.7777777777777778
+all,attack_type,many_shot_jailbreaking,8,8,1.0
+all,attack_type,obfuscation,8,8,1.0
+all,liu_type,combined,3,1,0.3333333333333333
+all,liu_type,context_ignoring,16,13,0.8125
+all,liu_type,escape_characters,3,1,0.3333333333333333
+all,liu_type,fake_completion,3,3,1.0
+all,liu_type,naive,8,6,0.75
+all,liu_type,none,36,30,0.8333333333333334
+all,goal_type,integrity,6,1,0.16666666666666666
+all,goal_type,leak,57,51,0.8947368421052632
+all,goal_type,tool_action,6,2,0.3333333333333333
+train,tổng,tất cả,69,54,0.782608695652174
+train,attack_type,code_switching_translation,8,8,1.0
+train,attack_type,direct_injection,9,9,1.0
+train,attack_type,indirect_injection,27,14,0.5185185185185185
+train,attack_type,jailbreak_roleplay,9,7,0.7777777777777778
+train,attack_type,many_shot_jailbreaking,8,8,1.0
+train,attack_type,obfuscation,8,8,1.0
+train,liu_type,combined,3,1,0.3333333333333333
+train,liu_type,context_ignoring,16,13,0.8125
+train,liu_type,escape_characters,3,1,0.3333333333333333
+train,liu_type,fake_completion,3,3,1.0
+train,liu_type,naive,8,6,0.75
+train,liu_type,none,36,30,0.8333333333333334
+train,goal_type,integrity,6,1,0.16666666666666666
+train,goal_type,leak,57,51,0.8947368421052632
+train,goal_type,tool_action,6,2,0.3333333333333333
