@@ -1,0 +1,27 @@
+{
+  "created_utc": "2026-10-11T23:07:36+00:00",
+  "argv": "--n-l2 150 --max-l2-calls 0 --out results/final/detection-l2",
+  "git_commit": "bb33fed8fd1396b8a8a76305157fe00812e8d1dc",
+  "n_attack": 2021,
+  "n_benign": 1729,
+  "l1_threshold": 0.6,
+  "l1_seconds": 72.87561012500373,
+  "seed": 0,
+  "n_l2": 150,
+  "max_l2_calls": 0,
+  "data_sha256": {
+    "ext_attack_full.json": "030bcd259ed3a86451298004bc2ab85ceea9a34dfaa6c46c6157953027f1f9ea",
+    "ext_benign_full.json": "2250c0ec598ce5b2b1cec0bcec789843622550759614da0137b1cc4c70bdf448"
+  },
+  "l2_model": "qwen2.5:3b",
+  "l2_threshold": 0.5,
+  "l2": {
+    "planned_docs": 450,
+    "done_docs": 450,
+    "stopped": "",
+    "sample_attack": 150,
+    "sample_benign": 150
+  },
+  "l2_new_calls": 759,
+  "l2_cache_hits": 252
+}

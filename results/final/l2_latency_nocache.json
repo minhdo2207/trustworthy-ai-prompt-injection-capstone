@@ -1,0 +1,9 @@
+{
+ "n": 70,
+ "mean_ms": 1165.3944863711201,
+ "p50_ms": 873.4601039977861,
+ "p95_ms": 2511.3085839984706,
+ "cache": "off",
+ "judge": "qwen2.5:3b",
+ "note": "\u0111o ri\u00eang, cache t\u1eaft, 40 benign + 30 train, m\u00e1y r\u1ea3nh"
+}
