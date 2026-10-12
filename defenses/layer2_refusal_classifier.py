@@ -81,6 +81,28 @@ OVERLAP_CHARS = 120              # để câu lệnh nằm ngay mép cửa sổ 
 MAX_CHUNKS = 6                   # trần số lượt judge mỗi tài liệu (kiểm soát chi phí)
 MAX_NEW_CALLS_DEFAULT = 150      # trần số lượt gọi model mới mỗi lần chạy CLI
 
+# Backend promptguard (Llama Prompt Guard 2, P3). Ngưỡng riêng vì điểm liên tục, khác thang điểm judge.
+# Ngưỡng theo tên thư mục model, chọn trên train + benign tune bằng ``python -m defenses.eval_promptguard calibrate``.
+PG_THRESHOLDS: dict[str, float] = {
+    "Llama-Prompt-Guard-2-86M": 0.0016,
+    "Llama-Prompt-Guard-2-22M": 0.002,
+    "deberta-v3-base-prompt-injection-v2": 0.025,
+}
+PG_THRESHOLDS_STRICT: dict[str, float] = {   # điểm vận hành thứ hai: FPR = 0 trên benign tune
+    "Llama-Prompt-Guard-2-86M": 0.003015,
+    "Llama-Prompt-Guard-2-22M": 0.077775,
+    "deberta-v3-base-prompt-injection-v2": 0.983907,
+}
+PG_CALIBRATION_NOTES: dict[str, str] = {
+    "Llama-Prompt-Guard-2-86M": ("2026-10-12, train n=69 + benign tune n=42, tài liệu gốc: AUC 0.9579 (bootstrap 95% [0.921, 0.9845]); FPR<=10% -> ngưỡng 0.0016, TPR 57/69, FPR 4/42; FPR=0 -> ngưỡng 0.003015, TPR 49/69"),
+    "Llama-Prompt-Guard-2-22M": ("2026-10-12, train n=69 + benign tune n=42, tài liệu gốc: AUC 0.8741 (bootstrap 95% [0.8026, 0.9393]); FPR<=10% -> ngưỡng 0.002, TPR 54/69, FPR 4/42; FPR=0 -> ngưỡng 0.077775, TPR 19/69"),
+    "deberta-v3-base-prompt-injection-v2": ("2026-10-12, train n=69 + benign tune n=42, tài liệu gốc: AUC 0.7602 (bootstrap 95% [0.6743, 0.8402]); FPR<=10% -> ngưỡng 0.025, TPR 34/69, FPR 4/42; FPR=0 -> ngưỡng 0.983907, TPR 27/69"),
+}
+PG_THRESHOLD = 0.5               # chỉ dùng khi model chưa có trong PG_THRESHOLDS
+PG_MAX_TOKENS = 512              # model card: "512-token context window"
+PG_STRIDE = 64                   # chồng lấn giữa hai cửa sổ token, lựa chọn của nhóm
+PG_BATCH = 8
+
 CACHE_ENV = "CAPSTONE_L2_CACHE"
 DEFAULT_CACHE_PATH = ROOT / "results" / "dev" / "l2_judge_cache.json"
 
@@ -397,23 +419,57 @@ def promptguard_available() -> tuple[bool, str]:
     return True, path
 
 
-_PG = {"model": None, "tok": None}
+_PG = {"model": None, "tok": None, "mal_idx": None, "path": None}
 
 
-def _promptguard_chunk(chunk: str) -> dict:  # pragma: no cover - cần trọng số, chưa kiểm chứng
-    import torch  # type: ignore
+def _pg_load():  # pragma: no cover - cần trọng số
+    """Nạp Prompt Guard 2 từ thư mục cục bộ (một lần). Chỉ số nhãn MALICIOUS lấy từ ``id2label``."""
     from transformers import AutoModelForSequenceClassification, AutoTokenizer  # type: ignore
     ok, path = promptguard_available()
-    if _PG["model"] is None:
-        _PG["tok"] = AutoTokenizer.from_pretrained(path, local_files_only=True)
-        _PG["model"] = AutoModelForSequenceClassification.from_pretrained(path, local_files_only=True).eval()
-    enc = _PG["tok"](chunk, return_tensors="pt", truncation=True, max_length=512)
+    if _PG["model"] is None or _PG["path"] != path:
+        tok = AutoTokenizer.from_pretrained(path, local_files_only=True)
+        model = AutoModelForSequenceClassification.from_pretrained(path, local_files_only=True).eval()
+        labels = {i: str(l).upper() for i, l in model.config.id2label.items()}
+        mal = [i for i, l in labels.items() if l in ("MALICIOUS", "LABEL_1", "INJECTION", "JAILBREAK")]
+        _PG.update(model=model, tok=tok, path=path, mal_idx=mal[0] if mal else max(labels))
+    return _PG["model"], _PG["tok"], _PG["mal_idx"]
+
+
+def pg_windows(ids: list[int], size: int, stride: int) -> list[tuple[int, int]]:
+    """Cửa sổ token [a, b) dài ``size``, bước ``size - stride``; luôn phủ hết tài liệu."""
+    if len(ids) <= size:
+        return [(0, len(ids))]
+    step = max(1, size - stride)
+    out, a = [], 0
+    while True:
+        b = min(a + size, len(ids))
+        out.append((a, b))
+        if b == len(ids):
+            return out
+        a += step
+
+
+def promptguard_scores(document: str) -> tuple[list[float], float]:  # pragma: no cover - cần trọng số
+    """P(MALICIOUS) cho từng cửa sổ token của tài liệu và thời gian chạy (ms).
+
+    Model card: ngữ cảnh 512 token, đầu vào dài thì "split prompts into segments and scan them in
+    parallel". Chồng lấn ``PG_STRIDE`` token là lựa chọn của nhóm (câu lệnh nằm ở mép vẫn trọn một cửa sổ).
+    Quét HẾT các cửa sổ (không có trần như judge vì mỗi cửa sổ rẻ)."""
+    import torch  # type: ignore
+    model, tok, mal = _pg_load()
+    enc = tok(document, add_special_tokens=False, return_offsets_mapping=True)
+    offs = enc["offset_mapping"]
+    # cắt theo token rồi đổi ra khoảng ký tự (không phụ thuộc API nội bộ của tokenizer); chừa 2 token đặc biệt
+    wins = pg_windows(offs, PG_MAX_TOKENS - 2, PG_STRIDE) if offs else [(0, 0)]
+    texts = [document[offs[a][0]:offs[b - 1][1]] if b > a else document for a, b in wins]
     t0 = time.perf_counter()
-    with torch.no_grad():
-        logits = _PG["model"](**enc).logits[0]
-    p = float(torch.softmax(logits, dim=-1)[-1])      # nhãn cuối = malicious
-    return {"score": p, "parsed": True, "raw": "", "cached": False,
-            "judge_ms": round((time.perf_counter() - t0) * 1000, 1)}
+    scores: list[float] = []
+    for k in range(0, len(texts), PG_BATCH):
+        batch = tok(texts[k:k + PG_BATCH], truncation=True, max_length=PG_MAX_TOKENS, padding=True, return_tensors="pt")
+        with torch.no_grad():
+            logits = model(**batch).logits
+        scores += torch.softmax(logits, dim=-1)[:, mal].tolist()
+    return scores, (time.perf_counter() - t0) * 1000.0
 
 
 _WARNED = {"pg": False}
@@ -431,17 +487,30 @@ def _backend() -> str:
     return b
 
 
+def _pg_name() -> str:
+    return Path(os.environ.get("CAPSTONE_PROMPTGUARD_PATH", "")).name
+
+
+def threshold_for(backend: str) -> float:
+    return PG_THRESHOLDS.get(_pg_name(), PG_THRESHOLD) if backend == "promptguard" else THRESHOLD
+
+
 def score_document(user_task: str, document: str) -> tuple[float, dict]:
     """Điểm P(injection) của cả tài liệu và thông tin chi tiết (cho reason/CLI)."""
     backend = _backend()
-    model = _model()
+    model = _model() if backend == "llm_judge" else Path(os.environ["CAPSTONE_PROMPTGUARD_PATH"]).name
     if not document.strip():
         return 0.0, {"backend": backend, "model": model, "chunks": 0, "scored": 0, "skipped": 0, "cached": 0, "best": -1}
+    if backend == "promptguard":
+        scores, ms = promptguard_scores(document)
+        best_i = max(range(len(scores)), key=scores.__getitem__)
+        return scores[best_i], {"backend": backend, "model": model, "chunks": len(scores), "scored": len(scores),
+                                "skipped": 0, "cached": 0, "best": best_i, "parse_fail": 0, "pg_ms": ms}
     chunks = split_chunks(document)
     idx, skipped = select_chunks(chunks)
     best_i, best, cached, scored, parse_fail = -1, -1.0, 0, 0, 0
     for i in idx:
-        r = _promptguard_chunk(chunks[i]) if backend == "promptguard" else _judge_chunk(user_task, chunks[i], model)
+        r = _judge_chunk(user_task, chunks[i], model)
         scored += 1
         cached += bool(r["cached"])
         parse_fail += not r["parsed"]
@@ -459,7 +528,7 @@ def check(user_task: str, document: str) -> LayerResult:
     t0 = time.perf_counter()
     score, d = score_document(user_task, document)
     score = max(0.0, min(1.0, score))
-    action = "block" if score >= THRESHOLD else "pass"
+    action = "block" if score >= threshold_for(d["backend"]) else "pass"
     tag = "injection" if action == "block" else "clean"
     reason = (f"{tag}:{d['backend']}" + (f"({d['model']})" if d["backend"] == "llm_judge" else "")
               + f" score={score:.2f} chunk={d['best'] + 1}/{d['chunks']}")
@@ -553,7 +622,8 @@ def _report(args) -> int:  # pragma: no cover - in số liệu
     _BUDGET["limit"] = args.max_new_calls
     attacks = load_train_attacks()
     benign, from_fixture = load_benign_tune()
-    print(f"L2  backend={_backend()} model={_model()} prompt={PROMPT_VERSION}  THRESHOLD(hiện tại)={THRESHOLD}")
+    cur_thr = threshold_for(_backend())
+    print(f"L2  backend={_backend()} model={_model()} prompt={PROMPT_VERSION}  THRESHOLD(hiện tại)={cur_thr}")
     t0 = time.perf_counter()
     try:
         pos, neg = _evaluate(attacks, benign, args.limit)
@@ -575,11 +645,11 @@ def _report(args) -> int:  # pragma: no cover - in số liệu
     print(f"Tiêu chí: TPR lớn nhất với FPR <= 10%  -> ngưỡng đề xuất {ch['threshold']:.2f} "
           f"(cắt tại điểm {ch['cut_score']:.2f}); Youden J tối đa {ch['youden_j']:.3f} tại điểm {ch['youden_cut']:.2f}")
     print(f"\n{'ngưỡng':>7s} {'TPR':>6s} {'TPR 95% CI':>16s} {'FPR':>6s} {'FPR 95% CI':>16s}")
-    for thr in sorted({0.3, 0.5, 0.7, ch["threshold"], THRESHOLD}):
+    for thr in sorted({0.3, 0.5, 0.7, ch["threshold"], cur_thr}):
         k_p, k_n = sum(s >= thr for s in ps), sum(s >= thr for s in ns)
         tl, th = wilson(k_p, len(ps))
         fl, fh = wilson(k_n, len(ns))
-        mark = "  <- đề xuất" if thr == ch["threshold"] else ("  <- hiện tại" if thr == THRESHOLD else "")
+        mark = "  <- đề xuất" if thr == ch["threshold"] else ("  <- hiện tại" if thr == cur_thr else "")
         print(f"{thr:7.2f} {k_p / len(ps):6.3f} [{tl:5.3f},{th:5.3f}]    {k_n / len(ns):6.3f} [{fl:5.3f},{fh:5.3f}]{mark}")
     per = defaultdict(list)
     for s, sc, _ in pos:

@@ -10,3 +10,6 @@ venv/
 attack_prompts/ext_attack_full.json
 attack_prompts/ext_benign_full.json
 results/dev/
+
+# Trọng số model cục bộ (Prompt Guard 2, ProtectAI): tải bằng huggingface_hub, không commit
+models/

@@ -288,6 +288,32 @@ def test_promptguard_unavailable_falls_back_with_message(monkeypatch, capsys):
     assert "promptguard không dùng được" in capsys.readouterr().err
 
 
+def test_pg_windows_cover_document_with_overlap():
+    assert L2.pg_windows(list(range(10)), 510, 64) == [(0, 10)]
+    w = L2.pg_windows(list(range(1200)), 510, 64)
+    assert w[0] == (0, 510) and w[-1][1] == 1200
+    assert all(b - a <= 510 for a, b in w)
+    assert all(w[i + 1][0] == w[i][1] - 64 for i in range(len(w) - 2))   # chồng lấn đúng 64 token
+
+
+def test_promptguard_backend_uses_max_window_and_own_threshold(monkeypatch, tmp_path):
+    monkeypatch.setenv("CAPSTONE_L2_BACKEND", "promptguard")
+    monkeypatch.setenv("CAPSTONE_PROMPTGUARD_PATH", str(tmp_path))
+    monkeypatch.setattr(L2, "PG_THRESHOLDS", {tmp_path.name: 0.3})
+    monkeypatch.setattr(L2, "promptguard_scores", lambda doc: ([0.01, 0.35, 0.02], 5.0))
+    install(monkeypatch)          # judge không được gọi
+    r = L2.check("t", "doc")
+    assert r.action == "block" and r.score == pytest.approx(0.35)
+    assert "promptguard" in r.reason and "chunk=2/3" in r.reason
+    monkeypatch.setattr(L2, "PG_THRESHOLDS", {tmp_path.name: 0.5})
+    assert L2.check("t", "doc").action == "pass"
+
+
+def test_threshold_for_backend():
+    assert L2.threshold_for("promptguard") == L2.PG_THRESHOLDS.get(L2._pg_name(), L2.PG_THRESHOLD)
+    assert L2.threshold_for("llm_judge") == L2.THRESHOLD
+
+
 # --- thước đo ------------------------------------------------------------------
 def test_auc_perfect_random_and_ties():
     assert L2.auc([0.9, 0.8], [0.1, 0.2]) == 1.0
