@@ -57,10 +57,12 @@ SPLIT_FILES = {
     "test_indist": "test_indist_prompts.json",
     "ext_attack": "ext_attack_prompts.json",
     "ext_benign": "ext_benign_prompts.json",
+    "ext2_attack": "ext2_attack_prompts.json",
+    "ext2_benign": "ext2_benign_prompts.json",
 }
 # Các split chỉ được chạy một lần cho cấu hình cuối: hold-out và dữ liệu ngoài (zero-shot, không dùng chỉnh tham số).
-FINAL_ONLY_SPLITS = ("holdout", "ext_attack", "ext_benign")
-EXT_SPLITS = ("ext_attack", "ext_benign")
+FINAL_ONLY_SPLITS = ("holdout", "ext_attack", "ext_benign", "ext2_attack", "ext2_benign")
+EXT_SPLITS = ("ext_attack", "ext_benign", "ext2_attack", "ext2_benign")
 SCORABLE_CHECKS = ("canary_leak", "contains", "regex", "tool_call")
 LAYER_MODULES = {
     "L1": "defenses.layer1_filtering",
@@ -566,7 +568,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--configs", default=DEFAULT_CONFIGS,
                    help="baseline,L1,L1+L2,L1+L2+L3,L1+L2+L3+L4,only_L1..only_L4")
     p.add_argument("--splits", default="train,benign",
-                   help="train,benign,holdout,test_indist,ext_attack,ext_benign")
+                   help="train,benign,holdout,test_indist,ext_attack,ext_benign,ext2_attack,ext2_benign")
     p.add_argument("--samples", type=int, default=3, help="số lần lấy mẫu mỗi (config, prompt)")
     p.add_argument("--temperature", type=float, default=0.7)
     p.add_argument("--seed", type=int, default=0, help="seed gốc, trộn với hash(prompt_id, sample_idx)")
