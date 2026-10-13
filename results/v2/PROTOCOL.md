@@ -45,3 +45,4 @@ không dùng để kết luận ASR. ASR chỉ tính trên prompt của nhóm v�
   (100 đã kích hoạt API, 100 do judge của bộ dữ liệu gán nhãn), đo phát hiện 1.500 → 600 email; giai đoạn 1b dùng 2 mẫu mỗi prompt thay vì 3 và
   không chạy ablation trên train. Các lần chạy song song trên Ollama không nhanh hơn (đã đo), nên chạy tuần tự.
 - Giai đoạn 1b chỉ chạy 42 tài liệu benign của nhóm không dùng để chỉnh (nửa dùng để chỉnh không chạy lại), thêm một cắt giảm vì thời gian.
+- Giai đoạn 1b cuối cùng chỉ có một mẫu mỗi mục (dừng sau lượt lấy mẫu 0 để kịp thời hạn).

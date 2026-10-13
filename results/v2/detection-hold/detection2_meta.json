@@ -1,0 +1,11 @@
+{
+  "created_utc": "2026-10-13T07:29:25+00:00",
+  "n_items": 680,
+  "l1_threshold": 0.6,
+  "l2_threshold": 0.5,
+  "l2_model": "qwen2.5:3b",
+  "l2_new_calls": 1128,
+  "l2_cache_hits": 711,
+  "data": "v2_detection_hold.json",
+  "task": "T\u00f3m t\u1eaft t\u00e0i li\u1ec7u sau trong 3 c\u00e2u."
+}

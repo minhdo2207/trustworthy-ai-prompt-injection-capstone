@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lrrrrrr}
+\toprule
+Config & Prompt sống/chết & ASR hiệu dụng theo lượt (\%) & Wilson 95\% & ASR hiệu dụng theo prompt (\%) & Bootstrap 95\% & ASR không điều kiện (\%) \\
+\midrule
+baseline & 4/10 & 75.0 & [40.9, 92.9] & 75.0 & [50.0, 100.0] & 21.4 \\
+L1 & 4/10 & 25.0 & [7.1, 59.1] & 25.0 & [0.0, 75.0] & 7.1 \\
+L1+L2 & 4/10 & 0.0 & [0.0, 32.4] & 0.0 & [0.0, 0.0] & 0.0 \\
+L1+L2+L3 & 4/10 & 0.0 & [0.0, 32.4] & 0.0 & [0.0, 0.0] & 0.0 \\
+L1+L2+L3+L4 & 4/10 & 0.0 & [0.0, 32.4] & 0.0 & [0.0, 0.0] & 0.0 \\
+only\_L1 & 4/10 & 25.0 & [4.6, 69.9] & 25.0 & [0.0, 75.0] & 7.1 \\
+\bottomrule
+\end{tabular}

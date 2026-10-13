@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Config & Lượt & Lần gọi model TB & Độ trễ TB (ms) & p50 (ms) & p95 (ms) & Chậm gấp (TB) & Chậm gấp (p50) & Chậm gấp (p95) & Lớp phòng thủ TB (ms) & Lớp p50 (ms) & Lớp p95 (ms) \\
+\midrule
+baseline & 42 & 1.00 & 7,460 & 7,503 & 11,350 & 1.00x & 1.00x & 1.00x & 0.0 & 0.0 & 0.0 \\
+L1 & 42 & 0.98 & 7,336 & 7,521 & 11,347 & 0.98x & 1.00x & 1.00x & 13.7 & 13.1 & 20.3 \\
+L1+L2 & 42 & 0.95 & 7,175 & 7,485 & 11,370 & 0.96x & 1.00x & 1.00x & 20.8 & 19.3 & 30.3 \\
+L1+L2+L3 & 42 & 0.95 & 12,088 & 12,470 & 15,440 & 1.62x & 1.66x & 1.36x & 21.1 & 19.6 & 30.6 \\
+L1+L2+L3+L4 & 42 & 1.90 & 20,424 & 20,868 & 25,385 & 2.74x & 2.78x & 2.24x & 8,409.0 & 8,666.1 & 12,142.0 \\
+only\_L1 & 42 & 0.98 & 7,336 & 7,521 & 11,347 & 0.98x & 1.00x & 1.00x & 13.7 & 13.1 & 20.3 \\
+\bottomrule
+\end{tabular}

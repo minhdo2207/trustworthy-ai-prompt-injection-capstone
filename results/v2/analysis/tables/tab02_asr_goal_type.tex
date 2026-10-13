@@ -1,0 +1,22 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrrrrrrrrr}
+\toprule
+Split & Mục tiêu & Prompt & baseline & L1 & L1+L2 & L1+L2+L3 & L1+L2+L3+L4 & only\_L1 & only\_L2 & only\_L3 & only\_L4 \\
+\midrule
+all & integrity & 16 & 61.5 & 11.5 & 11.5 & 3.8 & 11.5 & 6.3 & 33.3 & 33.3 & 33.3 \\
+ & leak & 93 & 11.6 & 4.7 & 0.8 & 0.0 & 0.0 & 3.2 & 4.0 & 0.0 & 8.0 \\
+ & tool\_action & 12 & 66.7 & 22.2 & 0.0 & 0.0 & 0.0 & 16.7 & 0.0 & 0.0 & 25.0 \\
+\midrule
+train & integrity & 6 & 66.7 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & leak & 57 & 8.8 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & tool\_action & 6 & 33.3 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+\midrule
+holdout & integrity & 9 & 55.6 & 16.7 & 16.7 & 5.6 & 16.7 & 11.1 & 33.3 & 33.3 & 33.3 \\
+ & leak & 25 & 16.0 & 8.0 & 2.0 & 0.0 & 0.0 & 8.0 & 4.0 & 0.0 & 8.0 \\
+ & tool\_action & 4 & 100.0 & 50.0 & 0.0 & 0.0 & 0.0 & 50.0 & 0.0 & 0.0 & 25.0 \\
+\midrule
+test\_indist & integrity & 1 & 100.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & leak & 11 & 9.1 & 9.1 & 0.0 & 0.0 & 0.0 & 9.1 & n/a & n/a & n/a \\
+ & tool\_action & 2 & 50.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+\bottomrule
+\end{tabular}

@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrrr}
+\toprule
+tune & Config & Prompt & Từ chối oan (\%) & Bootstrap 95\% & Utility \\
+\midrule
+false & baseline & 42 & 0.0 & [0.0, 0.0] & 0.933 \\
+ & L1 & 42 & 2.4 & [0.0, 7.1] & 0.909 \\
+ & L1+L2 & 42 & 4.8 & [0.0, 11.9] & 0.893 \\
+ & L1+L2+L3 & 42 & 4.8 & [0.0, 11.9] & 0.877 \\
+ & L1+L2+L3+L4 & 42 & 14.3 & [4.8, 26.2] & 0.778 \\
+ & only\_L1 & 42 & 2.4 & [0.0, 7.1] & 0.909 \\
+\bottomrule
+\end{tabular}

@@ -1,0 +1,33 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{llrrrrrrrrrr}
+\toprule
+Split & Loại tấn công & Prompt & baseline & L1 & L1+L2 & L1+L2+L3 & L1+L2+L3+L4 & only\_L1 & only\_L2 & only\_L3 & only\_L4 \\
+\midrule
+all & code\_switching\_translation & 14 & 10.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 20.0 \\
+ & direct\_injection & 16 & 8.7 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+ & indirect\_injection & 49 & 47.9 & 15.5 & 4.2 & 1.4 & 4.2 & 10.2 & 25.0 & 12.5 & 25.0 \\
+ & jailbreak\_roleplay & 16 & 13.0 & 8.7 & 4.3 & 0.0 & 0.0 & 6.3 & 0.0 & 0.0 & 25.0 \\
+ & many\_shot\_jailbreaking & 12 & 12.5 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 25.0 & 0.0 \\
+ & obfuscation & 14 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+\midrule
+train & code\_switching\_translation & 8 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & direct\_injection & 9 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & indirect\_injection & 27 & 37.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & jailbreak\_roleplay & 9 & 11.1 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & many\_shot\_jailbreaking & 8 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & obfuscation & 8 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+\midrule
+holdout & code\_switching\_translation & 5 & 20.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 20.0 \\
+ & direct\_injection & 5 & 20.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+ & indirect\_injection & 16 & 56.3 & 28.1 & 9.4 & 3.1 & 9.4 & 25.0 & 25.0 & 12.5 & 25.0 \\
+ & jailbreak\_roleplay & 4 & 25.0 & 25.0 & 12.5 & 0.0 & 0.0 & 25.0 & 0.0 & 0.0 & 25.0 \\
+ & many\_shot\_jailbreaking & 4 & 25.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 25.0 & 0.0 \\
+ & obfuscation & 4 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+\midrule
+test\_indist & code\_switching\_translation & 1 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & direct\_injection & 2 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & indirect\_injection & 6 & 50.0 & 16.7 & 0.0 & 0.0 & 0.0 & 16.7 & n/a & n/a & n/a \\
+ & jailbreak\_roleplay & 3 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+ & obfuscation & 2 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & n/a & n/a & n/a \\
+\bottomrule
+\end{tabular}
