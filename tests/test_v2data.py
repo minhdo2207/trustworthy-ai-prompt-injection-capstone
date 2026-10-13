@@ -49,7 +49,7 @@ def test_benign_tune_and_hold_split_of_llmail_emails():
     assert t and h and not t & h
 
 
-@pytest.mark.parametrize("split,n", [("lm_attack", 500), ("lm_benign", 80), ("lm_tune_benign", 80)])
+@pytest.mark.parametrize("split,n", [("lm_attack", 200), ("lm_benign", 80), ("lm_tune_benign", 80)])
 def test_harness_loads_lm_splits(split, n):
     assert len(E.load_prompts(split, DATA)) == n
 

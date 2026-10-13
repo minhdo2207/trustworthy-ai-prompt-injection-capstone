@@ -41,3 +41,6 @@ không dùng để kết luận ASR. ASR chỉ tính trên prompt của nhóm v�
   người tấn công.
 - Email benign của LLMail (160, kiểm dương tính giả) đã xuất hiện ở v1 (tập B, kết quả tổng hợp: không chặn nhầm). v2 chia đôi (80 chỉnh L4, 80 hold-out);
   nửa hold-out vì vậy không "chưa thấy" hoàn toàn, nhưng không dùng để chỉnh gì.
+- **Giảm cỡ mẫu vì thời gian (quyết định trước khi chạy bất kỳ hold-out LLMail nào):** email LLMail gđ2 chạy cả hệ thống 500 → 200 tấn công
+  (100 đã kích hoạt API, 100 do judge của bộ dữ liệu gán nhãn), đo phát hiện 1.500 → 600 email; giai đoạn 1b dùng 2 mẫu mỗi prompt thay vì 3 và
+  không chạy ablation trên train. Các lần chạy song song trên Ollama không nhanh hơn (đã đo), nên chạy tuần tự.

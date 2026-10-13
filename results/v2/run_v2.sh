@@ -12,10 +12,18 @@ run() { local out=$1; shift
   done; return 1; }
 case "$1" in
 stage1b)
-  run results/v2/stage1b-chain --configs $CHAIN --splits train,benign --samples 3
-  run results/v2/stage1b-abl --configs only_L2,only_L4 --splits train,benign --samples 1
-  run results/v2/stage1b-abl-l3 --configs only_L3 --splits train,benign --samples 1 --num-ctx 8192
+  run results/v2/stage1b-chain --configs $CHAIN --splits train,benign --samples 2
   echo "[$(date +%H:%M:%S)] STAGE1B DONE";;
+lm)
+  run results/v2/stage2b-lm --configs $CHAIN --splits lm_attack,lm_benign --samples 1 --confirm-final-holdout
+  echo "[$(date +%H:%M:%S)] LM DONE";;
+hold-abl)
+  run results/v2/stage2b-abl --configs only_L2,only_L4 --splits holdout --samples 1 --confirm-final-holdout
+  run results/v2/stage2b-abl-l3 --configs only_L3 --splits holdout --samples 1 --num-ctx 8192 --confirm-final-holdout
+  echo "[$(date +%H:%M:%S)] HOLD-ABL DONE";;
+det-hold)
+  python3 defenses/eval_detection2.py --data attack_prompts/v2_detection_hold.json --out results/v2/detection-hold --resume
+  echo "[$(date +%H:%M:%S)] DET-HOLD DONE";;
 stage2b)
   run results/v2/stage2b-main --configs $CHAIN --splits holdout,test_indist --samples 2 --confirm-final-holdout
   run results/v2/stage2b-lm --configs $CHAIN --splits lm_attack,lm_benign --samples 1 --confirm-final-holdout
@@ -23,5 +31,5 @@ stage2b)
   run results/v2/stage2b-abl-l3 --configs only_L3 --splits holdout --samples 1 --num-ctx 8192 --confirm-final-holdout
   python3 defenses/eval_detection2.py --data attack_prompts/v2_detection_hold.json --out results/v2/detection-hold --resume
   echo "[$(date +%H:%M:%S)] STAGE2B DONE";;
-*) echo "usage: $0 stage1b|stage2b"; exit 2;;
+*) echo "usage: $0 stage1b|stage2b|lm|hold-abl|det-hold"; exit 2;;
 esac
