@@ -12,7 +12,7 @@ run() { local out=$1; shift
   done; return 1; }
 case "$1" in
 stage1b)
-  run results/v2/stage1b-chain --configs $CHAIN --splits train,benign --samples 2
+  run results/v2/stage1b-chain --configs $CHAIN --splits train,benign --samples 2 --data-dir results/v2/stage1b_data
   echo "[$(date +%H:%M:%S)] STAGE1B DONE";;
 lm)
   run results/v2/stage2b-lm --configs $CHAIN --splits lm_attack,lm_benign --samples 1 --confirm-final-holdout
