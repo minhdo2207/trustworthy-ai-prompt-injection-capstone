@@ -1,0 +1,94 @@
+{
+ "tpr": {
+  "A_bipia_code": [
+   10,
+   100
+  ],
+  "A_bipia_text": [
+   0,
+   150
+  ],
+  "A_deepset": [
+   34,
+   250
+  ],
+  "A_gandalf": [
+   509,
+   991
+  ],
+  "A_jackhhao": [
+   208,
+   530
+  ],
+  "B_mirror": [
+   778,
+   1275
+  ],
+  "B_spml": [
+   37,
+   2600
+  ],
+  "B_vi_deepset": [
+   13,
+   263
+  ],
+  "lm_phase1": [
+   374,
+   1500
+  ],
+  "team_train": [
+   68,
+   69
+  ]
+ },
+ "fpr": {
+  "A_bipia_code": [
+   4,
+   99
+  ],
+  "A_bipia_email": [
+   0,
+   49
+  ],
+  "A_bipia_table": [
+   0,
+   701
+  ],
+  "A_deepset": [
+   0,
+   247
+  ],
+  "A_jackhhao": [
+   0,
+   633
+  ],
+  "B_mirror": [
+   4,
+   1150
+  ],
+  "B_spml": [
+   0,
+   1200
+  ],
+  "B_vi_deepset": [
+   0,
+   399
+  ],
+  "lm_benign_tune": [
+   0,
+   80
+  ],
+  "team_benign_tune": [
+   0,
+   42
+  ]
+ },
+ "tpr_objective": [
+  1994,
+  5128
+ ],
+ "fpr_all": [
+  8,
+  4600
+ ]
+}

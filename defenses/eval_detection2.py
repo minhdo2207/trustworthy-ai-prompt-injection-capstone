@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
         if it["id"] in done:
             continue
         r1 = l1.check(TASK, it["text"])
-        row = {"id": it["id"], "subset": it["subset"], "label": it["label"], "category": it["category"],
+        row = {"id": it["id"], "subset": it["subset"], "label": it["label"], "category": it.get("category", ""),
                "independent": it.get("independent", True), "n_chars": len(it["text"]), "l1_action": r1.action,
                "l1_score": "" if r1.score is None else round(r1.score, 4), "l2_action": "", "l2_score": "",
                "l1l2_blocked": "", "l2_calls_new": ""}
