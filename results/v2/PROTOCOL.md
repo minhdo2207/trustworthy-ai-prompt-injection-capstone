@@ -39,3 +39,5 @@ không dùng để kết luận ASR. ASR chỉ tính trên prompt của nhóm v�
   v2 không dùng từng prompt hold-out để chỉnh, nhưng phần hold-out thật sự "chưa thấy" chỉ là LLMail giai đoạn 2.
 - LLMail giai đoạn 1 và 2 cùng người thi và cùng kịch bản; tách theo giai đoạn chỉ là tách theo thời gian, không phải tách theo
   người tấn công.
+- Email benign của LLMail (160, kiểm dương tính giả) đã xuất hiện ở v1 (tập B, kết quả tổng hợp: không chặn nhầm). v2 chia đôi (80 chỉnh L4, 80 hold-out);
+  nửa hold-out vì vậy không "chưa thấy" hoàn toàn, nhưng không dùng để chỉnh gì.

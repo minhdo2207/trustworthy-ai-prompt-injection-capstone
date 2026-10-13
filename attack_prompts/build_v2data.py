@@ -108,7 +108,12 @@ def main(argv=None) -> int:
     p1 = attack_emails(args.raw / "llmail" / "labelled_unique_submissions_phase1.json")
     p2 = attack_emails(args.raw / "llmail" / "labelled_unique_submissions_phase2.json")
     b_used = {norm(r["text"]) for r in load_json(HERE / "ext2_detection_full.json") if r["subset"] == "llmail"}
-    p2_new = [r for r in p2 if norm(r["text"]) not in b_used]
+    p2_new, seen2 = [], set()
+    for r in p2:
+        k = norm(r["text"])
+        if k not in b_used and k not in seen2:   # sin trùng nguyên văn (sau chuẩn hoá) và không dùng ở v1
+            seen2.add(k)
+            p2_new.append(r)
     p1_sel = pick(p1, N_P1_API, N_P1_ATTACK, rng)
     for r in p1_sel:
         add(items_tune, "tune", "attack", "lm_phase1", r["text"], "p1#" + r["key"][:10])
