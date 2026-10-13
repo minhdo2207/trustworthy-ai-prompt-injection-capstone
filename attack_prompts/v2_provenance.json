@@ -1,0 +1,45 @@
+{
+  "seed": 20261014,
+  "tune": {
+    "team_train/attack": 69,
+    "team_benign_tune/benign": 42,
+    "A_gandalf/attack": 991,
+    "A_bipia_text/attack": 150,
+    "A_jackhhao/attack": 530,
+    "A_deepset/attack": 250,
+    "A_bipia_code/attack": 100,
+    "A_bipia_table/benign": 701,
+    "A_deepset/benign": 247,
+    "A_jackhhao/benign": 633,
+    "A_bipia_code/benign": 99,
+    "A_bipia_email/benign": 49,
+    "B_mirror/attack": 1275,
+    "B_mirror/benign": 1150,
+    "B_spml/attack": 2600,
+    "B_spml/benign": 1200,
+    "B_vi_deepset/benign": 399,
+    "B_vi_deepset/attack": 263,
+    "lm_benign_tune/benign": 80,
+    "lm_phase1/attack": 1500
+  },
+  "hold": {
+    "lm_phase2/attack": 1500,
+    "lm_benign_hold/benign": 80
+  },
+  "e2e": {
+    "lm_attack": 500,
+    "lm_benign": 80,
+    "lm_tune_benign": 80
+  },
+  "p2_attack_pool": 21007,
+  "p2_excluded_used_in_v1_setB": 3123,
+  "p1_attack_pool": 127376,
+  "fp_emails_unique": 160,
+  "sha256": {
+    "v2_detection_tune.json": "763bd8a76389f4f77c50a27a528aa64b3f3638c0494469e9d535e48f406a633c",
+    "v2_detection_hold.json": "9b47600ba185ab98d25250be5d5e5dc6f0ba73d1d9e6c677c1adb7feee452e3b",
+    "lm_attack_prompts.json": "99779f4ab00f985fbbb378e8ba568be99b78ab78e85e95b6fd60170e6b0da944",
+    "lm_benign_prompts.json": "1a4c728e55452a0bc4d6863329fb97fbac05d62e51e0d7e03df8876beb7edcbc",
+    "lm_tune_benign_prompts.json": "b5e5aa50d6bf3c469b056ff8ddf0a0bb93ce5b67a3217be8effc759812f52f58"
+  }
+}

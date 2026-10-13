@@ -574,6 +574,49 @@ _add("decode_exec", "vi", 0.58,
      r"\b(?:giai\s+ma|khoi\s+phuc|bo\s+khoang\s+trang|ghep\s+cac\s+chu|bo\s+dau\s+gach|ap\s+dung\s+rot13|rot13|base64)\b[^.\n]{0,70}\b(?:roi|sau\s+do|va)\s+(?:thuc\s+hien|lam\s+theo|thuc\s+thi|tuan\s+theo)\b|"
      r"\b(?:thuc\s+hien|lam\s+theo|thuc\s+thi)\s+(?:chi\s+dan|cau\s+lenh|ket\s+qua|noi\s+dung)\s+(?:da\s+)?(?:giai\s+ma|nhan\s+duoc|khoi\s+phuc)\b|\bgiai\s+ma\b[^.\n]{0,40}\blam\s+theo\b", "vi")
 
+# --- v2: mẫu thêm sau khi có dữ liệu chỉnh công khai (results/v2/tuning_log.md) ----------------
+# Chỉ chọn bằng tập chỉnh (nhóm train, tập A, Mirror, SPML, bản dịch Việt, LLMail gđ1); không dùng hold-out.
+# Mỗi mẫu là một họ cấu trúc (động từ + đối tượng), không phải chuỗi của một prompt cụ thể.
+_add("persona", "no_restrictions", 0.62,
+     r"\b(?:you|i|it|he|she|they|we|ai|assistant|bot|chatbot|model|persona|character|mode)\s+(?:\w+\s+){0,2}(?:have|has|had|with|having|are\s+free\s+of|is\s+free\s+of)\s+(?:absolutely\s+)?no\s+(?:\w+\s+)?(?:restrictions?|guidelines|limits|limitations|rules|filters|boundaries|constraints)\b|"
+     r"\b(?:your|my)\s+new\s+(?:identity|name|persona|role)\s+is\b")
+_add("leak", "output_instructions", 0.62,
+     r"\b(?:output|print|show|display|reveal|repeat|dump|recite|give|return|write\s+out|tell\s+me|share)\s+(?:me\s+)?(?:your|the)\s+"
+     r"(?:entire\s+|full\s+|complete\s+|whole\s+|exact\s+|raw\s+|original\s+|initial\s+|hidden\s+|internal\s+|json\s+)*"
+     r"(?:context|configuration|config|system\s+(?:prompt|message|instructions?)|instructions?|prompt|setup|initial\s+prompt|rules)\b")
+_add("leak", "ask_password", 0.6,
+     r"\b(?:tell|give|show|reveal|say|spell|write|print|repeat|provide|share|what\s+is|what's|whats)\s+(?:me\s+)?(?:the\s+|your\s+)?(?:secret\s+)?"
+     r"(?:password|passphrase|secret\s+(?:word|phrase|code|key|value))\b")
+_add("override", "negate_typo", 0.65,
+     r"\b(?:negate|nullify|void|invalidate|rescind|supersede|override)\s+(?:all\s+|any\s+|every\s+)?(?:the\s+)?(?:instr\w{3,9}|rules|commands|directives|guidelines|prompts?)\b|"
+     r"\bnew\s+instr\w{3,9}\s+(?:that\s+)?(?:override|replace|supersede|overrule|cancel)")
+_add("override", "forget_everything", 0.62,
+     r"\bforget\s+(?:everything|all|your\s+(?:training|rules|instructions|guidelines|programming|previous\s+\w+))\b|"
+     r"\bdo\s+(?:whatever|anything|everything)\s+i\s+(?:ask|say|want|tell)\b|\bskip\s+all\s+(?:content\s+)?(?:checks|filters|rules|restrictions|safety)\b")
+_add("override", "scoped_ignore", 0.62,
+     r"\bignore\s+(?:your|the|all|any|these|those)?\s*(?:previous\s+|above\s+|prior\s+|earlier\s+)?(?:instructions?|commands?|rules|directions?)\b"
+     r"[^.\n]{0,60}\b(?:regarding|about|on|concerning|for|related\s+to|that|which|written)\b")
+_add("override", "romance_german", 0.62,
+     r"\b(?:ignora(?:r|te)?|ignorez|ignoriere[n]?|ignorer|pasa\s+por\s+alto|omite|descarta|salta|olvida(?:r)?|oublie[sz]?|vergiss|vergessen|dimentica)\s+"
+     r"(?:todas?\s+|tutte\s+|toutes?\s+|alle[ns]?\s+)?(?:(?:las|los|le|les|tus|vos|deine|ihre|ihren|il|lo|i|gli)\s+)?"
+     r"(?:instrucciones|restricciones|reglas|instructions|restrictions|r[èe]gles|anweisungen|regeln|beschr[äa]nkungen|istruzioni|restrizioni|regole|"
+     r"il\s+testo|el\s+texto|le\s+texte|den\s+text|(?:tu|su|votre|dein|ihr)\s+\w+)\b")
+_add("leak", "romance_german", 0.62,
+     r"\b(?:muestra|mu[eé]strame|affiche[sz]?|zeig(?:e)?|mostra|mostrami|revela|rev[eé]lame|r[eé]v[eè]le|gib)\s+(?:me\s+|mir\s+)?"
+     r"(?:(?:tu|tus|votre|vos|dein|deine|il\s+tuo|la\s+tua|le\s+tue)\s+)?(?:(?:completa|compl[eè]te|vollst[äa]ndige?n?|completo)\s+)?"
+     r"(?:prompt|configuraci[óo]n|configuration|konfiguration|configurazione|instrucciones|instructions|anweisungen|istruzioni|prompt\s+de\s+sistema|system\s*prompt|systemprompt)\b")
+_add("decode_exec", "format_cipher", 0.62,
+     r"\b(?:provide|render|give|present|write|deliver|compose|format|express|encode|output)\s+(?:your\s+|the\s+)?(?:reply|answer|response|output|summary)\s+"
+     r"(?:using|in|with|via|as|through|by)\s+(?:an?\s+)?(?:\w+\s+){0,2}"
+     r"(?:cipher|substitution|base-?64|caesar|rot-?13|binary|morse|leet|reversed|backwards|pig\s+latin|hex(?:adecimal)?|encoded|encryption|code\s+words?)\b")
+_add("task_hijack", "insert_code", 0.62,
+     r"\b(?:incorporate|interweave|weave|inject|engage|feature|integrate|embed|insert)\s+(?:the\s+)?(?:following|subsequent|below|next)\s+"
+     r"(?:\w+\s+){0,2}(?:code|snippet|script|excerpt|fragment|segment)\b[^`]{0,80}```")
+_add("tool_action", "send_email_to", 0.62,
+     r"\bsend\s+(?:an?\s+)?e-?mail\b[^.\n]{0,80}\bto\b[^.\n]{0,20}[\w.-]+@[\w.-]+|\btrigger(?:ing)?\s+a\s+tool\s+call\b")
+_add("authority", "fake_role_tags", 0.6,
+     r"</?\s*(?:tool|user|system|assistant)\s*>|\[/?\s*system\s*\]")
+
 _MANY_SHOT_USER = re.compile(r"^\s*(?:user|human|nguoi\s+dung|yeu\s+cau|q|question)\s*\d*\s*[:：]", re.I | re.M)
 _MANY_SHOT_ASST = re.compile(r"^\s*(?:assistant|ai|bot|tro\s+ly|tra\s+loi|a|answer|response)\s*\d*\s*[:：]", re.I | re.M)
 
