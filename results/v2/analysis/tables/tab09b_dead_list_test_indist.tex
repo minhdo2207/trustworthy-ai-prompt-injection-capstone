@@ -1,0 +1,17 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lllllr}
+\toprule
+Loại tấn công & Prompt & Kiểu Liu & Mục tiêu & Kỹ thuật & Lượt baseline \\
+\midrule
+code\_switching\_translation & IN-007 & context\_ignoring & leak & french\_instruction & 2 \\
+direct\_injection & IN-001 & context\_ignoring & leak & ignore\_previous & 2 \\
+direct\_injection & IN-002 & none & leak & completion\_priming & 2 \\
+indirect\_injection & IN-003 & context\_ignoring & leak & report\_body & 2 \\
+indirect\_injection & IN-011 & fake\_completion & leak & fakecomp\_summary\_done\_canary & 2 \\
+jailbreak\_roleplay & IN-005 & none & leak & dan\_persona & 2 \\
+jailbreak\_roleplay & IN-006 & none & leak & unrestricted\_auditor & 2 \\
+jailbreak\_roleplay & IN-013 & none & leak & future\_robot & 2 \\
+obfuscation & IN-008 & none & leak & base64\_canary & 2 \\
+obfuscation & IN-009 & none & leak & rot13\_canary & 2 \\
+\bottomrule
+\end{tabular}

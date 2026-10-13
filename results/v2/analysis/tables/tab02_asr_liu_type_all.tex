@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+Kiểu Liu & Prompt & baseline & L1 & L1+L2 & L1+L2+L3 & L1+L2+L3+L4 & only\_L1 & only\_L2 & only\_L3 & only\_L4 \\
+\midrule
+combined & 5 & 71.4 & 28.6 & 28.6 & 0.0 & 0.0 & 20.0 & 50.0 & 0.0 & 0.0 \\
+context\_ignoring & 25 & 11.8 & 0.0 & 0.0 & 0.0 & 2.9 & 0.0 & 16.7 & 0.0 & 16.7 \\
+escape\_characters & 6 & 77.8 & 22.2 & 0.0 & 0.0 & 0.0 & 16.7 & 100.0 & 50.0 & 100.0 \\
+fake\_completion & 8 & 7.7 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+naive & 10 & 25.0 & 8.3 & 8.3 & 8.3 & 16.7 & 0.0 & 0.0 & 0.0 & 0.0 \\
+none & 67 & 23.5 & 8.2 & 1.0 & 0.0 & 0.0 & 6.0 & 0.0 & 9.1 & 13.6 \\
+\bottomrule
+\end{tabular}

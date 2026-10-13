@@ -23,7 +23,7 @@ RUNS_V1 = ["stage1-chain", "stage1-abl", "stage1-abl-l3", "stage1-abl-l1alias",
 ALIAS_V1 = {"stage1-abl-l1alias": ("stage1-chain", {"train", "benign"}),
             "stage2-l1alias": ("stage2-main", {"holdout", "test_indist"})}
 # v2 (results/v2/PROTOCOL.md): chỉ các lần chạy của nhóm; email LLMail phân tích riêng (analysis/ext2_report.py)
-RUNS_V2 = ["stage1b-chain", "stage1b-abl", "stage1b-abl-l3", "stage1b-abl-l1alias",
+RUNS_V2 = ["stage1b-chain", "stage1b-abl-l1alias",
            "stage2b-main", "stage2b-abl", "stage2b-abl-l3", "stage2b-l1alias"]
 ALIAS_V2 = {"stage1b-abl-l1alias": ("stage1b-chain", {"train", "benign"}),
             "stage2b-l1alias": ("stage2b-main", {"holdout", "test_indist"})}

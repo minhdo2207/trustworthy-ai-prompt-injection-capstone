@@ -1,0 +1,7 @@
+idx config label n_runs n_prompts asr w_lo w_hi w_minus w_plus asr_prompt b_lo b_hi b_minus b_plus
+0 baseline baseline 69 69 15.942 9.14173 26.3347 6.8003 10.3927 15.942 7.24638 24.6377 8.69565 8.69565
+1 L1 L1 69 69 0 0 5.27391 0 5.27391 0 0 0 0 0
+2 L1+L2 L1+L2 69 69 0 0 5.27391 0 5.27391 0 0 0 0 0
+3 L1+L2+L3 L1+L2+L3 69 69 0 0 5.27391 0 5.27391 0 0 0 0 0
+4 L1+L2+L3+L4 L1+L2+L3+L4 69 69 0 0 5.27391 0 5.27391 0 0 0 0 0
+5 only_L1 only\_L1 69 69 0 0 5.27391 0 5.27391 0 0 0 0 0

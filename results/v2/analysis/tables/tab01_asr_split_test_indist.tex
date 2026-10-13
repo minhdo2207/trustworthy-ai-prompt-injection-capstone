@@ -1,0 +1,13 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lrrrrrrr}
+\toprule
+Config & Lượt & Prompt & Thành công & ASR lượt (\%) & Wilson 95\% (lạc quan) & ASR theo prompt (\%) & Bootstrap theo prompt 95\% \\
+\midrule
+baseline & 28 & 14 & 6 & 21.4 & [10.2, 39.5] & 21.4 & [3.6, 42.9] \\
+L1 & 28 & 14 & 2 & 7.1 & [2.0, 22.6] & 7.1 & [0.0, 21.4] \\
+L1+L2 & 28 & 14 & 0 & 0.0 & [0.0, 12.1] & 0.0 & [0.0, 0.0] \\
+L1+L2+L3 & 28 & 14 & 0 & 0.0 & [0.0, 12.1] & 0.0 & [0.0, 0.0] \\
+L1+L2+L3+L4 & 28 & 14 & 0 & 0.0 & [0.0, 12.1] & 0.0 & [0.0, 0.0] \\
+only\_L1 & 14 & 14 & 1 & 7.1 & [1.3, 31.5] & 7.1 & [0.0, 21.4] \\
+\bottomrule
+\end{tabular}

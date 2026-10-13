@@ -1,0 +1,12 @@
+**Bảng 5. Benign: từ chối oan và chất lượng tác vụ**
+
+| Config | Lượt | Prompt | Từ chối oan (%) | Wilson 95% | Bootstrap 95% | Bị chặn (%) | Model từ chối (%) | Utility (cả bị chặn=0) | Utility (không bị chặn) | Tăng từ chối vs baseline (pp) | Đổi utility vs baseline |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | 42 | 42 | 0.0 | [0.0, 8.4] | [0.0, 0.0] | 0.0 | 0.0 | 0.933 | 0.933 | - | - |
+| L1 | 42 | 42 | 2.4 | [0.4, 12.3] | [0.0, 7.1] | 2.4 | 0.0 | 0.909 | 0.931 | +2.4 [0.0, +7.1] | -0.024 [-0.079, +0.016] |
+| L1+L2 | 42 | 42 | 4.8 | [1.3, 15.8] | [0.0, 11.9] | 4.8 | 0.0 | 0.893 | 0.938 | +4.8 [0.0, +11.9] | -0.040 [-0.111, +0.024] |
+| L1+L2+L3 | 42 | 42 | 4.8 | [1.3, 15.8] | [0.0, 11.9] | 4.8 | 0.0 | 0.877 | 0.921 | +4.8 [0.0, +11.9] | -0.056 [-0.147, +0.028] |
+| L1+L2+L3+L4 | 42 | 42 | 14.3 | [6.7, 27.8] | [4.8, 26.2] | 14.3 | 0.0 | 0.778 | 0.907 | +14.3 [+4.8, +26.2] | -0.155 [-0.278, -0.048] |
+| only_L1 | 42 | 42 | 2.4 | [0.4, 12.3] | [0.0, 7.1] | 2.4 | 0.0 | 0.909 | 0.931 | +2.4 [0.0, +7.1] | -0.024 [-0.079, +0.016] |
+
+Phạm vi: chỉ benign `tune:false`. Từ chối oan = bị chặn *hoặc* model tự từ chối. Utility: benign bị chặn tính 0 theo hợp đồng; cột 'không bị chặn' chỉ tính các lượt qua được phòng thủ. Hiệu vs baseline là bootstrap xếp cặp theo prompt benign (dương = từ chối nhiều hơn / utility cao hơn).

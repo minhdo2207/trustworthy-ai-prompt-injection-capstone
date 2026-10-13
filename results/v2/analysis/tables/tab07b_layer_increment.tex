@@ -1,0 +1,21 @@
+% Sinh tự động bởi analysis.stats; cần \usepackage{booktabs}. Không sửa tay.
+\begin{tabular}{lllrrrr}
+\toprule
+Split & Lớp thêm & Config & Chặn thêm tấn công (pp) & Giảm ASR (pp) & Chặn thêm benign (pp) & Từ chối oan tăng thêm (pp) \\
+\midrule
+train & L1 & L1 & +98.6 & +15.9 [+7.2, +24.6] & +2.4 & +2.4 \\
+ & L2 & L1+L2 & 0.0 & 0.0 [0.0, 0.0] & +2.4 & +2.4 \\
+ & L3 & L1+L2+L3 & 0.0 & 0.0 [0.0, 0.0] & 0.0 & 0.0 \\
+ & L4 & L1+L2+L3+L4 & 0.0 & 0.0 [0.0, 0.0] & +9.5 & +9.5 \\
+\midrule
+holdout & L1 & L1 & +57.9 & +19.7 [+7.9, +32.9] & +2.4 & +2.4 \\
+ & L2 & L1+L2 & +18.4 & +9.2 [+1.3, +18.4] & +2.4 & +2.4 \\
+ & L3 & L1+L2+L3 & 0.0 & +3.9 [0.0, +10.5] & 0.0 & 0.0 \\
+ & L4 & L1+L2+L3+L4 & 0.0 & -2.6 [-6.6, 0.0] & +9.5 & +9.5 \\
+\midrule
+test\_indist & L1 & L1 & +71.4 & +14.3 [0.0, +32.1] & +2.4 & +2.4 \\
+ & L2 & L1+L2 & +28.6 & +7.1 [0.0, +21.4] & +2.4 & +2.4 \\
+ & L3 & L1+L2+L3 & 0.0 & 0.0 [0.0, 0.0] & 0.0 & 0.0 \\
+ & L4 & L1+L2+L3+L4 & 0.0 & 0.0 [0.0, 0.0] & +9.5 & +9.5 \\
+\bottomrule
+\end{tabular}
