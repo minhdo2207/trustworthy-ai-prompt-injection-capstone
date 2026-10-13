@@ -23,7 +23,7 @@ không dùng để kết luận ASR. ASR chỉ tính trên prompt của nhóm v�
 - **L2**: giữ prompt v4 và model `qwen2.5:3b`. Ngưỡng chọn lại là giá trị cho tỉ lệ phát hiện cao nhất trên tune attack
   (không tính SPML) với FPR ≤ 2% trên benign tune; nếu không cải thiện rõ so với 0,5 thì giữ 0,5.
 - **L3**: giữ nguyên biến thể `full`.
-- **L4**: chọn lại τ là giá trị nhỏ nhất có FPR ≤ 10% trên benign tune **trong chuỗi** (L1+L2+L3+L4), như cũ.
+- **L4**: chọn lại τ là giá trị nhỏ nhất có FPR ≤ 10% trên benign tune **trong chuỗi** (L1+L2+L3+L4), như cũ. (Sửa trước khi chạy hold-out: ngân sách 10% áp cho từng quần thể benign, lấy ngưỡng lớn nhất; lý do ở `tuning_log.md`.)
 - Mọi lần chỉnh ghi vào `results/v2/tuning_log.md`. Sau khi gắn tag `freeze-v2` không được sửa lớp nào.
 
 ## Chạy

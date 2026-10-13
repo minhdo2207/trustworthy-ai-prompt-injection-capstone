@@ -22,4 +22,9 @@ LLMail gđ1, 80 email benign tune). Không dùng hold-out. Quy tắc đặt trư
 - Giữ nguyên biến thể `full`.
 
 ## L4
-- Hiệu chỉnh trong chuỗi, xem `l4-calib` và phần cuối file này (điền sau khi chạy).
+- Hiệu chỉnh trong chuỗi L1+L2+L3+L4 trên 122 tài liệu benign tune (42 của nhóm + 80 email LLMail), 1 mẫu (`l4-calib/`, `l4_calibration.json`).
+- Quy tắc đặt trước (PROTOCOL.md): "giá trị nhỏ nhất có FPR <= 10% trên benign tune trong chuỗi". Khi áp dụng thấy một khuyết điểm của quy tắc: gộp hai
+  quần thể khác nhau làm ngân sách 10% (12 lượt) dồn hết vào 42 tài liệu của nhóm (12/42 = 29%), vì email LLMail có độ giống thấp (tối đa 0,765).
+  **Sửa quy tắc trước khi chạy bất kỳ hold-out nào**: ngân sách 10% áp cho TỪNG quần thể, lấy ngưỡng lớn nhất. Nhóm: 4/42 cho phép, điểm cao thứ 5 là 0,9458, nên 0,9463;
+  email: 8/80 cho phép, điểm cao thứ 9 là 0,6950, nên 0,6955. Ngưỡng chung = 0,9463, **trùng với bản v1**. Giữ `THRESHOLD = 0.9463`, không đổi code L4.
+- Ghi chú: 4/122 lượt bị L4 chặn ở ngưỡng này (đều thuộc 42 tài liệu của nhóm).
