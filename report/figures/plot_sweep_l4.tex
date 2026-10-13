@@ -1,9 +1,0 @@
-\begin{tikzpicture}
-\begin{axis}[width=\linewidth,height=5.2cm,xlabel={ngưỡng},ylabel={\%},ymin=0,ymax=100,ymajorgrids,grid style={black!12},
-  legend style={at={(0.5,1.03)},anchor=south,draw=none,legend columns=-1,font=\scriptsize}]
-\addplot[thick,blue!60!black] table[x=tau,y=block_atk]{results_dat/sweep_l4.dat};
-\addplot[thick,red!65!black,dashed] table[x=tau,y=frr]{results_dat/sweep_l4.dat};
-\addplot[only marks,mark=o,mark size=3pt,black,line width=0.8pt,forget plot] table[x=tau,y expr=\thisrow{chosen}>0.5 ? \thisrow{block_atk} : nan]{results_dat/sweep_l4.dat};
-\legend{chặn tấn công,FRR benign}
-\end{axis}
-\end{tikzpicture}

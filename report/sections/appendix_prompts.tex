@@ -1,6 +1,0 @@
-\newcommand{\ucode}[1]{{\color{violet!80!black}\textless U+#1\textgreater}}
-
-\section{Toàn bộ prompt dùng trong báo cáo}\label{app:prompts}
-Bảng dưới đây liệt kê mọi prompt thuộc các tập đã dùng, gồm mã, loại tấn công, kỹ thuật (theo danh mục HackAPrompt~\citep{schulhoff2023hackaprompt}), kiểu cơ bản theo \citet{liu2024formalizing}, mục tiêu, nguồn và một trích đoạn payload (tối đa 120 ký tự, các ký tự ngoài bảng chữ Latinh và các ký tự vô hình hiển thị dưới dạng mã Unicode). Bảng được sinh bằng \code{scripts/gen\_appendix.py} từ dữ liệu prompt; dòng ghi nguồn ở đầu bảng cho biết dữ liệu lấy từ đâu (nhánh và commit). Kiểu Liu ghi \texttt{none} khi prompt không thuộc năm kiểu cơ bản; dòng ``Tập'' cho biết prompt thuộc tập nào. Các payload là \emph{dữ liệu thí nghiệm}; việc nêu chúng nhằm minh bạch và tái lập.
-
-\IfFileExists{sections/appendix_prompts_table.tex}{\input{sections/appendix_prompts_table.tex}}{\placeholderbox{Bảng \texttt{sections/appendix\_prompts\_table.tex}}{Chạy \texttt{python3 scripts/gen\_appendix.py} (build.sh tự chạy).}}

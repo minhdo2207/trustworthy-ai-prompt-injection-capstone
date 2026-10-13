@@ -8,7 +8,7 @@ Quy tắc gộp (đã dùng để tạo `results/final/merged`; script này tái
      stage2-main (holdout, test_indist), đổi `config` thành `only_L1` và `run_id` thành `<run>-l1alias`.
 Không gọi mô hình, chỉ đọc/ghi tệp.
 
-Dùng: python3 report/scripts/merge_results.py --final-dir /.../results/final --out /đường/dẫn/mới [--verify /.../merged]
+Dùng: python3 -m analysis.merge_results --final-dir /.../results/final --out /đường/dẫn/mới [--verify /.../merged]
 """
 from __future__ import annotations
 
