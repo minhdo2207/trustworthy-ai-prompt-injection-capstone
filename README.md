@@ -56,11 +56,12 @@ Instruction Hierarchy, StruQ and SecAlign train the model and are not reproduced
   training) and 14 paraphrased prompts, labelled with the five basic attacks of Liu et al. and with
   technique names, and 84 benign documents (42 for tuning, 42 for reporting; 30 hard negatives).
 - **Public external data**, used zero-shot and never for tuning, in two sets:
-  1. `deepset/prompt-injections`, `Lakera/gandalf_ignore_instructions`, `jackhhao/jailbreak-classification` and
-     BIPIA contexts (2,021 attack and 1,729 benign items for detection; 120 + 120 end to end).
-  2. Mirror (Apache-2.0), SPML (MIT) and LLMail-Inject phase 2 (MIT), 10,047 items after deduplication
-     (9,385 independent plus 662 items of a Vietnamese translation of deepset); a sample of 240 attack and
-     120 benign LLMail e-mails is also run end to end.
+  - *Set A* (stage 2): `deepset/prompt-injections`, `Lakera/gandalf_ignore_instructions`,
+    `jackhhao/jailbreak-classification` and BIPIA contexts (2,021 attack and 1,729 benign items for detection;
+    120 + 120 end to end).
+  - *Set B* (stage 3, run once after the freeze): Mirror (Apache-2.0), SPML (MIT) and LLMail-Inject phase 2 (MIT),
+    10,047 items after deduplication (9,385 independent plus 662 items of a Vietnamese translation of deepset);
+    240 attack and 120 benign LLMail e-mails are also run end to end.
 
 Public sets are lists of single prompts. They have no carrier document, no Vietnamese task, no
 per-run secret and no success check that runs on the model output, which an end-to-end ASR needs, so
@@ -88,7 +89,7 @@ bootstrap interval over prompts.
   L4. L4 stops no further attack.
 - L1, tuned most by hand, blocks 98.6% of the training attack runs but 37.6% [35.6, 39.8] of 2,021
   external attacks zero-shot.
-- On the second external set (run once after the freeze), L1 and L2 detect 17.3% and 39.3% of 6,875 independent
+- On external set B (run once after the freeze), L1 and L2 detect 17.3% and 39.3% of 6,875 independent
   attacks. End to end on 240 LLMail-Inject e-mails the undefended model calls the attacker's tool in 52.1%
   [45.8, 58.3] of the cases; the chain brings this to 0.4% [0.1, 2.3] (L3 is the largest step, L4 has no effect).
 - Limitations: small data written by us, one model, one static task, non-adaptive attacks.
