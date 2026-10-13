@@ -52,49 +52,55 @@ Instruction Hierarchy, StruQ and SecAlign train the model and are not reproduced
 
 ## Data
 
-- **Team attack set** (schema v2, written by the team): 69 training, 38 hold-out (techniques not in
-  training) and 14 paraphrased prompts, labelled with the five basic attacks of Liu et al. and with
-  technique names, and 84 benign documents (42 for tuning, 42 for reporting; 30 hard negatives).
-- **Public external data**, used zero-shot and never for tuning, in two sets:
-  - *Set A* (stage 2): `deepset/prompt-injections`, `Lakera/gandalf_ignore_instructions`,
-    `jackhhao/jailbreak-classification` and BIPIA contexts (2,021 attack and 1,729 benign items for detection;
-    120 + 120 end to end).
-  - *Set B* (stage 3, run once after the freeze): Mirror (Apache-2.0), SPML (MIT) and LLMail-Inject phase 2 (MIT),
-    10,047 items after deduplication (9,385 independent plus 662 items of a Vietnamese translation of deepset);
-    240 attack and 120 benign LLMail e-mails are also run end to end.
+- **Team attack set** (written by the team): 69 training, 38 hold-out (techniques not in training)
+  and 14 paraphrased prompts, labelled with the five basic attacks of Liu et al. and with technique
+  names, and 84 benign documents (42 for tuning, 42 for reporting; 30 hard negatives).
+- **Public data, split by source.** Some sources are used to tune the layers, the others are kept for
+  a single final run:
+  - *Tune* (12,328 items): `deepset/prompt-injections`, `Lakera/gandalf_ignore_instructions`,
+    `jackhhao/jailbreak-classification`, BIPIA (payloads in carrier documents), Mirror, SPML, a
+    Vietnamese translation of deepset, and the attack e-mails of phase 1 of LLMail-Inject plus half of
+    its benign e-mails.
+  - *Hold-out*: the attack e-mails of phase 2 of LLMail-Inject that were not used before (200 run
+    end to end, 600 for detection only) and the other half of its benign e-mails (80). This is the only
+    public hold-out that no tuning has seen.
 
 Public sets are lists of single prompts. They have no carrier document, no Vietnamese task, no
-per-run secret and no success check that runs on the model output, which an end-to-end ASR needs, so
-the main measurement uses the team set and the public sets serve as a second, zero-shot test.
+per-run secret and, except LLMail-Inject, no success check that runs on the model output, which an
+end-to-end ASR needs. So the ASR is computed on the team prompts and on the LLMail-Inject e-mails
+(a `send_email` call whose arguments contain the attacker's address); the other sources are used to
+tune and to measure detection only.
 
 ## Protocol and main results
 
-Thresholds are tuned on the training prompts and half of the benign set only. The configuration is
-then frozen, and the hold-out and external splits are run exactly once. ASR is per prompt with a 95%
-bootstrap interval over prompts.
+The protocol was written down before the hold-out was run: tune the layers on the tune data, freeze the
+configuration (tag `freeze-v2`), and run the hold-out exactly once. ASR is per prompt with a 95% bootstrap
+interval over prompts (Wilson interval over runs for the e-mails).
 
-| | Train | Hold-out |
-|---|---|---|
-| ASR without defense | 15.9% [8.7, 23.7] | 32.9% [19.7, 47.4] |
-| + L1 | 0.0% | 15.8% |
-| + L2 | 0.0% | 7.9% |
-| + L3 | 0.0% | 0.0% |
-| + L4 | 0.0% | 0.0% |
+| ASR (%) | No defense | + L1 | + L2 | + L3 | + L4 |
+|---|---|---|---|---|---|
+| Team hold-out (38 prompts) | 34.2 [19.7, 48.7] | 14.5 | 5.3 | 1.3 | 3.9 |
+| LLMail-Inject phase 2 (200 e-mails) | 51.5 [44.6, 58.3] | 22.0 | 14.5 | 0.0 [0.0, 1.9] | 0.0 |
 
-- Only the marginal gains of L1 (+17.1 points [+7.9, +28.9]) and L3 (+7.9 [+1.3, +17.1]) have intervals
-  that exclude zero on hold-out. The 0 successes in 76 hold-out runs correspond to a Wilson upper bound
-  of 4.8%, so this is not a guarantee.
-- On untouched benign documents, the false-refusal rate goes 0, 2.4, 4.8, 4.8 and 15.9% along the chain,
-  and mean latency (all 84 benign documents) reaches 1.69 times the baseline with L3 and 2.78 times with
-  L4. L4 stops no further attack.
-- L1, tuned most by hand, blocks 98.6% of the training attack runs but 37.6% [35.6, 39.8] of 2,021
-  external attacks zero-shot.
-- On external set B (run once after the freeze), L1 and L2 detect 17.3% and 39.3% of 6,875 independent
-  attacks. End to end on 240 LLMail-Inject e-mails the undefended model calls the attacker's tool in 52.1%
-  [45.8, 58.3] of the cases; the chain brings this to 0.4% [0.1, 2.3] (L3 is the largest step, L4 has no effect).
-- Limitations: small data written by us, one model, one static task, non-adaptive attacks.
+- On the team hold-out, the reductions of L1 (+19.7 points [+7.9, +32.9]) and L2 (+9.2 [+1.3, +18.4])
+  exclude zero, the one of L3 (+3.9 [0.0, +10.5]) touches zero, and L4 does not help (the 3.9% against
+  1.3% is sampling noise: L4 blocks no run). Without defense the ASR on the 69 training prompts is
+  15.9% [7.2, 24.6].
+- On the e-mails, L1 removes the most (+29.5 points), then L3 (+14.5) and L2 (+7.5); L4 changes nothing.
+  Part of the L1 gain comes from patterns chosen on phase 1 of the same competition, which has the same goal.
+- On the 42 untouched benign documents of the team, the false-refusal rate goes 0, 2.4, 4.8, 4.8 and 14.3%
+  along the chain, and the mean latency is 0.98, 0.96, 1.62 and 2.74 times the baseline. L4 stops no
+  further attack: with our implementation it is a negative result, not a statement about MELON itself.
+- On the 600 phase-2 e-mails used for detection, L1 detects 47.0%, L2 37.3% and both together 59.7%,
+  with no false positive on 80 benign e-mails.
+- Tuning L1 on public data raised its detection rate on those data from 38.9% to 51.3% but did not change
+  what it blocks among the team hold-out prompts (57.9% in both designs).
+- A zero is an observation, not a guarantee: 0 successes in 200 e-mails correspond to an upper bound of 1.9%.
+- Limitations: small data partly written by us, a hold-out that is only partly unseen, reduced sample
+  sizes to finish in time, one model, one static task, non-adaptive attacks.
 
-The full write-up (method, metrics, all tables) is in the report; its LaTeX source is under `report/`.
+An earlier design (public data used zero-shot only, never for tuning) gave similar numbers on the
+team prompts; its results are kept in `results/final/`, and the v2 runs and the tuning log are in `results/v2/`.
 
 ## Repository layout
 
@@ -103,8 +109,7 @@ analysis/        statistics: Wilson and cluster-bootstrap intervals, result tabl
 attack_prompts/  attack and benign data, external data (build scripts, provenance), validation script, reference list
 baseline_agent/  the target system (no defense)
 defenses/        L1-L4, the evaluation harness, detection experiments
-report/          LaTeX sources of the report and slides
-results/         final runs (results/final) and tuning evidence (results/dev_tuning)
+results/         runs of the earlier design (results/final), of the final design (results/v2) and tuning evidence
 tests/           offline tests (Ollama is mocked)
 ```
 
